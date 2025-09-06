@@ -1,5 +1,5 @@
 {
-  "name": "ChurchTools Sermon Planner",
-  "description": "A web application to synchronize worship service schedules from ChurchTools, assign preachers, and write the assignments back. This provides a clear interface for managing sermon plans.",
+  "name": "Sermon Planning App",
+  "description": "A sermon planning application that integrates with ChurchTools, using Netlify Functions for the backend and a Neon PostgreSQL database. This app helps sync events, manage preacher assignments, and streamline the sermon preparation process.",
   "requestFramePermissions": []
 }
