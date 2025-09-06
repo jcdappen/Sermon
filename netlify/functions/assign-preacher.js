@@ -49,7 +49,7 @@ exports.handler = async (event, context) => {
       }),
     });
 
-    // 3. Update the local database
+    // 3. Update the local database with all details from the modal.
     await pool.query(`
       UPDATE sermon_plans 
       SET 

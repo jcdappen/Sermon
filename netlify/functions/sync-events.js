@@ -56,8 +56,6 @@ exports.handler = async (event, context) => {
       'includes[]': 'eventServices' // Request service information
     });
     
-    // Note: ChurchTools documentation suggests the endpoint is /events, not /calendar/events
-    // We'll try the documented one first.
     const eventsResponse = await ct.request(`/events?${params.toString()}`);
     const events = eventsResponse.data || [];
 
@@ -81,6 +79,8 @@ exports.handler = async (event, context) => {
                     sermonDetails = parseSermonDetailsFromComment(preacherService.comment);
                 }
             }
+            
+            const location = event.calendar?.name || event.address || '';
 
             await client.query(`
                 INSERT INTO sermon_plans (
@@ -106,8 +106,8 @@ exports.handler = async (event, context) => {
             `, [
                 event.id,
                 event.startDate.split('T')[0],
-                event.caption,
-                event.address || '',
+                event.name, // Corrected from event.caption
+                location, // Corrected to use calendar name primarily
                 event.startDate,
                 event.endDate,
                 preacherId,
