@@ -7,7 +7,7 @@ import SermonPlanView from './components/SermonPlanView';
 import PeopleView from './components/PeopleView';
 import SyncLogView from './components/SyncLogView';
 import AssignSermonModal from './components/AssignSermonModal';
-import { SyncIcon, UserGroupIcon, DocumentTextIcon } from './components/icons/Icons';
+import { SyncIcon, UserGroupIcon, DocumentTextIcon, WrenchScrewdriverIcon } from './components/icons/Icons';
 
 // FIX: Removed React.FC type annotation to resolve a component type inference issue.
 // This was causing a cascade of scope errors where variables and functions inside the component
@@ -21,10 +21,12 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSermon, setSelectedSermon] = useState<SermonPlan | null>(null);
+  const [isDbSetupError, setIsDbSetupError] = useState(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setIsDbSetupError(false);
     try {
       const [plans, persons, logs] = await Promise.all([
         api.getSermonPlans(),
@@ -35,7 +37,13 @@ const App = () => {
       setPeople(persons);
       setSyncLogs(logs);
     } catch (err) {
-      setError('Fehler beim Laden der Daten.');
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('relation "sermon_plans" does not exist')) {
+        setError('Die Datenbank ist noch nicht eingerichtet. Bitte führen Sie die Ersteinrichtung durch.');
+        setIsDbSetupError(true);
+      } else {
+        setError('Fehler beim Laden der Daten.');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -55,6 +63,22 @@ const App = () => {
     } catch (err) {
       setError('Fehler bei der Synchronisation der Events.');
       console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleSetupDatabase = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await api.setupDatabase();
+      alert(result.message);
+      await fetchData(); // Refresh all data after setup
+    } catch (err) {
+      setError('Fehler beim Einrichten der Datenbank.');
+      console.error(err);
+      setIsDbSetupError(true); // Keep the setup screen visible on error
     } finally {
       setIsLoading(false);
     }
@@ -117,10 +141,27 @@ const App = () => {
   );
 
   const renderView = () => {
-    if (isLoading && !sermonPlans.length) {
+    if (isLoading && !sermonPlans.length && !error) {
       return <div className="text-center p-8">Lade Daten...</div>;
     }
     if (error) {
+      if (isDbSetupError) {
+        return (
+          <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+            <WrenchScrewdriverIcon className="w-16 h-16 mx-auto text-yellow-500 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Datenbank-Einrichtung erforderlich</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={handleSetupDatabase}
+              disabled={isLoading}
+              className="flex items-center justify-center mx-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors duration-200"
+            >
+              <WrenchScrewdriverIcon className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Richte ein...' : 'Datenbank jetzt einrichten'}
+            </button>
+          </div>
+        );
+      }
       return <div className="text-center p-8 text-red-500">{error}</div>;
     }
 

@@ -104,13 +104,13 @@ exports.handler = async (event, context) => {
                 INSERT INTO sermon_plans (
                   churchtools_event_id, date, title, location, start_time, end_time, 
                   preacher_id, preacher_name, theme_series, theme_topic, sermon_notes, status,
-                  last_synced
+                  sync_status, last_synced
                 ) 
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'synced', NOW())
                 ON CONFLICT (churchtools_event_id) 
                 DO UPDATE SET
                   date = EXCLUDED.date,
-                  title = EXcluded.title,
+                  title = EXCLUDED.title,
                   location = EXCLUDED.location,
                   start_time = EXCLUDED.start_time,
                   end_time = EXCLUDED.end_time,
@@ -120,6 +120,7 @@ exports.handler = async (event, context) => {
                   theme_topic = EXCLUDED.theme_topic,
                   sermon_notes = EXCLUDED.sermon_notes,
                   status = EXCLUDED.status,
+                  sync_status = 'synced',
                   last_synced = NOW()
             `, [
                 event.id,

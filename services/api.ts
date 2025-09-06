@@ -149,3 +149,9 @@ export const assignPreacher = async (
     }),
   });
 };
+
+export const setupDatabase = async (): Promise<{ message: string }> => {
+  return await apiRequest<{ message: string }>('setup-database', {
+    method: 'POST',
+  });
+};
