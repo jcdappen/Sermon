@@ -33,7 +33,7 @@ exports.handler = async (event, context) => {
   }
 
   const requiredEnvVars = [
-    'NEON_DATABASE_URL',
+    'NETLIFY_DATABASE_URL',
     'CHURCHTOOLS_BASE_URL',
     'CHURCHTOOLS_API_TOKEN',
     'GOTTESDIENST_CALENDAR_ID',
@@ -53,7 +53,7 @@ exports.handler = async (event, context) => {
   let pool;
   try {
     pool = new Pool({
-      connectionString: process.env.NEON_DATABASE_URL,
+      connectionString: process.env.NETLIFY_DATABASE_URL,
     });
 
     const ct = new ChurchToolsClient(
@@ -110,7 +110,7 @@ exports.handler = async (event, context) => {
                 ON CONFLICT (churchtools_event_id) 
                 DO UPDATE SET
                   date = EXCLUDED.date,
-                  title = EXCLUDED.title,
+                  title = EXcluded.title,
                   location = EXCLUDED.location,
                   start_time = EXCLUDED.start_time,
                   end_time = EXCLUDED.end_time,

@@ -16,7 +16,7 @@ exports.handler = async (event, context) => {
   }
 
   const requiredEnvVars = [
-    'NEON_DATABASE_URL',
+    'NETLIFY_DATABASE_URL',
     'CHURCHTOOLS_BASE_URL',
     'CHURCHTOOLS_API_TOKEN',
     'PREACHER_SERVICE_TYPE_ID'
@@ -37,7 +37,7 @@ exports.handler = async (event, context) => {
     const { eventId, preacherId, preacherName, sermonDetails } = JSON.parse(event.body);
     
     pool = new Pool({
-      connectionString: process.env.NEON_DATABASE_URL
+      connectionString: process.env.NETLIFY_DATABASE_URL
     });
 
     const ct = new ChurchToolsClient(

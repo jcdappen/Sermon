@@ -14,8 +14,8 @@ exports.handler = async (event, context) => {
     };
   }
 
-  if (!process.env.NEON_DATABASE_URL) {
-    const msg = 'Database connection string (NEON_DATABASE_URL) is not configured in environment variables.';
+  if (!process.env.NETLIFY_DATABASE_URL) {
+    const msg = 'Database connection string (NETLIFY_DATABASE_URL) is not configured in environment variables.';
     console.error(msg);
     return {
       statusCode: 500,
@@ -25,7 +25,7 @@ exports.handler = async (event, context) => {
   }
 
   const pool = new Pool({
-    connectionString: process.env.NEON_DATABASE_URL,
+    connectionString: process.env.NETLIFY_DATABASE_URL,
   });
 
   try {

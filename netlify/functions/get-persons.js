@@ -67,7 +67,7 @@ exports.handler = async (event, context) => {
     // defined in the provided database schema, and would cause a runtime error.
     /*
     let pool = new Pool({
-      connectionString: process.env.NEON_DATABASE_URL,
+      connectionString: process.env.NETLIFY_DATABASE_URL,
       ssl: { rejectUnauthorized: false },
     });
     const client = await pool.connect();
