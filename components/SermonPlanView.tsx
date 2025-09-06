@@ -91,7 +91,7 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
                     className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
                   >
                     <PencilIcon className="w-4 h-4 mr-1" />
-                    {sermon.preacher_id ? 'Bearbeiten' : 'Zuweisen'}
+                    {sermon.preacher_name ? 'Bearbeiten' : 'Zuweisen'}
                   </button>
                 </td>
               </tr>

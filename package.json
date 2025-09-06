@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "node-ical": "^0.16.1",
     "pg": "^8.12.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

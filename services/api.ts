@@ -1,4 +1,4 @@
-import { SermonPlan, Person, SyncLog } from '../types';
+import { SermonPlan, SyncLog } from '../types';
 
 // Helper interface for the standardized API response
 interface ApiResponse<T> {
@@ -106,10 +106,6 @@ export const getSermonPlans = async (): Promise<SermonPlan[]> => {
   return transformedPlans.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
 
-export const getPeople = async (): Promise<Person[]> => {
-  return await apiRequest<Person[]>('get-persons');
-};
-
 export const getSyncLogs = async (): Promise<SyncLog[]> => {
   return await apiRequest<SyncLog[]>('get-sync-logs') || [];
 };
@@ -121,9 +117,9 @@ export const syncEvents = async (): Promise<{ message: string; synced: number }>
 };
 
 export const assignPreacher = async (
-  eventId: number,
-  preacherId: number,
+  eventUid: string,
   sermonDetails: { 
+    preacherName: string;
     series: string; 
     topic: string; 
     notes: string; 
@@ -132,19 +128,12 @@ export const assignPreacher = async (
     communion: string;
   }
 ): Promise<{ message: string }> => {
-  const people = await getPeople();
-  const person = people.find(p => p.id === preacherId);
-  if (!person) {
-      throw new Error('Selected preacher could not be found in the people list.');
-  }
-    
-  return await apiRequest<{ message:string }>('assign-preacher', {
+  return await apiRequest<{ message: string }>('assign-preacher', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      eventId,
-      preacherId,
-      preacherName: person.name, // Pass the name to the backend
+      eventUid,
+      preacherName: sermonDetails.preacherName,
       sermonDetails
     }),
   });

@@ -1,3 +1,4 @@
+
 const { Pool } = require('pg');
 
 exports.handler = async (event, context) => {
@@ -37,13 +38,12 @@ exports.handler = async (event, context) => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS sermon_plans (
         id SERIAL PRIMARY KEY,
-        churchtools_event_id INTEGER UNIQUE NOT NULL,
+        event_uid VARCHAR(255) UNIQUE NOT NULL,
         date DATE NOT NULL,
         title VARCHAR(255) NOT NULL,
         location VARCHAR(255),
         start_time TIMESTAMPTZ NOT NULL,
         end_time TIMESTAMPTZ NOT NULL,
-        preacher_id INTEGER,
         preacher_name VARCHAR(255),
         theme_series VARCHAR(255),
         theme_topic VARCHAR(255),

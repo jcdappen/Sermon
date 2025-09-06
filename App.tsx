@@ -1,13 +1,13 @@
 
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { SermonPlan, Person, SyncLog, View } from './types';
+import { SermonPlan, SyncLog, View } from './types';
 import * as api from './services/api';
 import SermonPlanView from './components/SermonPlanView';
-import PeopleView from './components/PeopleView';
 import SyncLogView from './components/SyncLogView';
+import StatisticsView from './components/StatisticsView';
 import AssignSermonModal from './components/AssignSermonModal';
-import { SyncIcon, UserGroupIcon, DocumentTextIcon, WrenchScrewdriverIcon } from './components/icons/Icons';
+import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon } from './components/icons/Icons';
 
 // FIX: Removed React.FC type annotation to resolve a component type inference issue.
 // This was causing a cascade of scope errors where variables and functions inside the component
@@ -15,7 +15,6 @@ import { SyncIcon, UserGroupIcon, DocumentTextIcon, WrenchScrewdriverIcon } from
 const App = () => {
   const [view, setView] = useState<View>(View.SERMON_PLAN);
   const [sermonPlans, setSermonPlans] = useState<SermonPlan[]>([]);
-  const [people, setPeople] = useState<Person[]>([]);
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,13 +27,11 @@ const App = () => {
     setError(null);
     setIsDbSetupError(false);
     try {
-      const [plans, persons, logs] = await Promise.all([
+      const [plans, logs] = await Promise.all([
         api.getSermonPlans(),
-        api.getPeople(),
         api.getSyncLogs(),
       ]);
       setSermonPlans(plans);
-      setPeople(persons);
       setSyncLogs(logs);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -95,7 +92,7 @@ const App = () => {
   };
 
   const handleSaveAssignment = async (details: {
-    preacherId: number;
+    preacherName: string;
     series: string;
     topic: string;
     notes: string;
@@ -108,8 +105,7 @@ const App = () => {
     setIsLoading(true);
     try {
       await api.assignPreacher(
-        selectedSermon.churchtools_event_id,
-        details.preacherId,
+        selectedSermon.event_uid,
         details
       );
       await fetchData(); // Refresh data to show changes
@@ -175,10 +171,10 @@ const App = () => {
             isLoading={isLoading}
           />
         );
-      case View.PEOPLE:
-        return <PeopleView people={people} />;
       case View.SYNC_LOG:
         return <SyncLogView syncLogs={syncLogs} />;
+      case View.STATISTICS:
+        return <StatisticsView sermonPlans={sermonPlans} />;
       default:
         return null;
     }
@@ -189,11 +185,11 @@ const App = () => {
       <aside className="w-64 bg-white shadow-md flex flex-col">
         <div className="p-4 border-b">
           <h1 className="text-xl font-bold text-gray-800">Predigtplaner</h1>
-          <p className="text-xs text-gray-500">ChurchTools Sync</p>
+          <p className="text-xs text-gray-500">iCal Sync</p>
         </div>
         <nav className="flex-1 p-4 space-y-2">
            <NavItem targetView={View.SERMON_PLAN} icon={<DocumentTextIcon className="w-5 h-5" />} label="Predigtplan" />
-           <NavItem targetView={View.PEOPLE} icon={<UserGroupIcon className="w-5 h-5" />} label="Personen" />
+           <NavItem targetView={View.STATISTICS} icon={<ChartBarIcon className="w-5 h-5" />} label="Statistiken" />
            <NavItem targetView={View.SYNC_LOG} icon={<SyncIcon className="w-5 h-5" />} label="Sync Protokoll" />
         </nav>
       </aside>
@@ -204,7 +200,6 @@ const App = () => {
       {isModalOpen && selectedSermon && (
         <AssignSermonModal
           sermon={selectedSermon}
-          people={people.filter(p => p.can_preach)}
           onClose={handleCloseModal}
           onSave={handleSaveAssignment}
         />

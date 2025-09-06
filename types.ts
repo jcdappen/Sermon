@@ -1,13 +1,13 @@
 
+
 export interface SermonPlan {
   id: number;
-  churchtools_event_id: number;
+  event_uid: string;
   date: string;
   title: string;
   location: string;
   start_time: string;
   end_time: string;
-  preacher_id: number | null;
   preacher_name: string | null;
   theme_series: string | null;
   theme_topic: string | null;
@@ -22,16 +22,6 @@ export interface SermonPlan {
   updated_at: string;
 }
 
-export interface Person {
-  id: number;
-  first_name: string;
-  last_name: string;
-  name: string;
-  email: string | null;
-  can_preach: boolean;
-  last_updated: string;
-}
-
 export interface SyncLog {
   id: number;
   sync_type: 'pull_events' | 'assign_preacher' | 'update_event';
@@ -42,8 +32,26 @@ export interface SyncLog {
   synced_at: string;
 }
 
+// FIX: Add Person interface to resolve missing type error in PeopleView.tsx.
+export interface Person {
+  id: number;
+  first_name: string;
+  last_name: string;
+  name: string;
+  email: string | null;
+  can_preach: boolean;
+  last_updated: string;
+}
+
+export interface PreacherStat {
+    name: string;
+    count: number;
+    percentage: number;
+}
+
+
 export enum View {
   SERMON_PLAN,
-  PEOPLE,
   SYNC_LOG,
+  STATISTICS,
 }
