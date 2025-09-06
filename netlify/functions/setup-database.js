@@ -34,7 +34,8 @@ exports.handler = async (event, context) => {
   try {
     await client.query('BEGIN');
 
-    // Create sermon_plans table
+    // Create sermon_plans table - this is the target schema.
+    // If the table exists, this command does nothing, but older versions might be missing columns.
     await client.query(`
       CREATE TABLE IF NOT EXISTS sermon_plans (
         id SERIAL PRIMARY KEY,
@@ -69,12 +70,30 @@ exports.handler = async (event, context) => {
       );
     `);
 
+    // ** Migration Step **
+    // Check if the 'event_uid' column exists. If not, this is an older schema.
+    const columnCheck = await client.query(`
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_name = 'sermon_plans' AND column_name = 'event_uid'
+    `);
+
+    if (columnCheck.rowCount === 0) {
+      console.log("Schema migration needed: 'event_uid' column is missing.");
+      // Add the column. It will be nullable for now.
+      await client.query(`ALTER TABLE sermon_plans ADD COLUMN event_uid VARCHAR(255);`);
+      
+      // Add a unique index. This is critical for the `ON CONFLICT` statement in sync-events.js.
+      // This will succeed because the new column is all NULLs.
+      await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS sermon_plans_event_uid_idx ON sermon_plans (event_uid);`);
+      console.log("Successfully added 'event_uid' column and unique index to 'sermon_plans'.");
+    }
+
     await client.query('COMMIT');
     
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, data: { message: 'Datenbank-Tabellen erfolgreich erstellt.' } }),
+      body: JSON.stringify({ success: true, data: { message: 'Datenbank-Tabellen erfolgreich erstellt oder aktualisiert.' } }),
     };
   } catch (error) {
     await client.query('ROLLBACK');
