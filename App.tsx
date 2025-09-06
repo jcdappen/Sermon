@@ -7,7 +7,7 @@ import SermonPlanView from './components/SermonPlanView';
 import SyncLogView from './components/SyncLogView';
 import StatisticsView from './components/StatisticsView';
 import AssignSermonModal from './components/AssignSermonModal';
-import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon } from './components/icons/Icons';
+import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, InformationCircleIcon } from './components/icons/Icons';
 
 // FIX: Removed React.FC type annotation to resolve a component type inference issue.
 // This was causing a cascade of scope errors where variables and functions inside the component
@@ -21,6 +21,7 @@ const App = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSermon, setSelectedSermon] = useState<SermonPlan | null>(null);
   const [isDbSetupError, setIsDbSetupError] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -53,12 +54,19 @@ const App = () => {
 
   const handleSyncEvents = async () => {
     setIsLoading(true);
+    setError(null);
+    setConfigError(null);
     try {
       const result = await api.syncEvents();
       alert(result.message);
       await fetchData(); // Refresh all data
     } catch (err) {
-      setError('Fehler bei der Synchronisation der Events.');
+      const errorMessage = err instanceof Error ? err.message : String(err);
+       if (errorMessage.includes('Missing required environment variables: ICAL_URL')) {
+        setConfigError('Die iCal-URL ist nicht konfiguriert. Bitte fügen Sie die Umgebungsvariable ICAL_URL in Ihren Netlify-Build-Einstellungen hinzu, um Gottesdienste synchronisieren zu können.');
+      } else {
+        setError('Fehler bei der Synchronisation der Events.');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -194,6 +202,19 @@ const App = () => {
         </nav>
       </aside>
       <main className="flex-1 p-6 overflow-auto">
+        {configError && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow-md" role="alert">
+            <div className="flex">
+              <div className="py-1">
+                <InformationCircleIcon className="w-6 h-6 text-red-500 mr-4" />
+              </div>
+              <div>
+                <p className="font-bold">Konfigurationsfehler</p>
+                <p className="text-sm">{configError}</p>
+              </div>
+            </div>
+          </div>
+        )}
         {renderView()}
       </main>
 
