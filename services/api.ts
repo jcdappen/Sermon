@@ -1,30 +1,40 @@
 import { SermonPlan, Person, SyncLog } from '../types';
 
+// Helper interface for the standardized API response
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error?: string;
+}
+
 // Helper function to handle API requests to Netlify functions
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`/.netlify/functions/${endpoint}`, options);
 
   if (!response.ok) {
     let errorMessage = `Request failed with status ${response.status}`;
-    // Read the body as text ONCE to avoid "body stream already read" errors.
     const errorText = await response.text();
     try {
-      // Then, try to parse the text as JSON.
       const errorData = JSON.parse(errorText);
       errorMessage = errorData.error || errorData.message || JSON.stringify(errorData);
     } catch (e) {
-      // If parsing fails, the raw text is our error message.
       errorMessage = errorText || errorMessage;
     }
     throw new Error(errorMessage);
   }
-
-  // Handle successful responses that might not have a body (e.g., 204 No Content)
+  
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.indexOf("application/json") !== -1) {
      const text = await response.text();
-     // Ensure text is not empty before parsing to avoid errors on empty bodies
-     return text ? JSON.parse(text) : (null as T);
+     if (!text) {
+         return null as T;
+     }
+     const jsonResponse: ApiResponse<T> = JSON.parse(text);
+     if (!jsonResponse.success) {
+         throw new Error(jsonResponse.error || jsonResponse.message || 'An unknown API error occurred.');
+     }
+     return jsonResponse.data;
   }
   
   return null as T;
@@ -36,17 +46,15 @@ export const getSermonPlans = async (): Promise<SermonPlan[]> => {
 };
 
 export const getPeople = async (): Promise<Person[]> => {
-  const data = await apiRequest<{ persons: Person[] }>('get-persons');
-  return data?.persons || [];
+  return await apiRequest<Person[]>('get-persons');
 };
 
 export const getSyncLogs = async (): Promise<SyncLog[]> => {
-  const logs = await apiRequest<SyncLog[]>('get-sync-logs');
-  return logs || [];
+  return await apiRequest<SyncLog[]>('get-sync-logs') || [];
 };
 
-export const syncEvents = async (): Promise<{ success: boolean; message: string; synced: number }> => {
-  return await apiRequest<{ success: boolean; message: string; synced: number }>('sync-events', {
+export const syncEvents = async (): Promise<{ message: string; synced: number }> => {
+  return await apiRequest<{ message: string; synced: number }>('sync-events', {
     method: 'POST',
   });
 };
@@ -62,14 +70,14 @@ export const assignPreacher = async (
     collection: string;
     communion: string;
   }
-): Promise<{ success: boolean; message: string }> => {
+): Promise<{ message: string }> => {
   const people = await getPeople();
   const person = people.find(p => p.id === preacherId);
   if (!person) {
       throw new Error('Selected preacher could not be found in the people list.');
   }
     
-  return await apiRequest<{ success: boolean; message: string }>('assign-preacher', {
+  return await apiRequest<{ message:string }>('assign-preacher', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

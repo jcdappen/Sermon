@@ -1,111 +1,171 @@
+const { Pool } = require('pg');
+const { ChurchToolsClient } = require('../utils/churchtools-client');
 
-const { getDbPool, ChurchToolsClient, createResponse } = require('./utils');
-
-const { GOTTESDIENST_CALENDAR_ID, PREACHER_SERVICE_TYPE_ID } = process.env;
+function parseSermonDetailsFromComment(comment) {
+  const details = { series: null, topic: null, notes: null };
+  if (!comment) return details;
+  
+  const parts = comment.split('|').map(p => p.trim());
+  for (const part of parts) {
+    if (part.toLowerCase().startsWith('serie:')) {
+      details.series = part.substring('serie:'.length).trim();
+    } else if (part.toLowerCase().startsWith('thema:')) {
+      details.topic = part.substring('thema:'.length).trim();
+    } else if (part.toLowerCase().startsWith('notizen:')) {
+      details.notes = part.substring('notizen:'.length).trim();
+    }
+  }
+  return details;
+}
 
 exports.handler = async (event, context) => {
-    if (event.httpMethod !== 'POST') {
-        return createResponse(405, { success: false, error: 'Method Not Allowed' });
-    }
-
-    if (!GOTTESDIENST_CALENDAR_ID || !PREACHER_SERVICE_TYPE_ID) {
-        return createResponse(400, { success: false, error: 'GOTTESDIENST_CALENDAR_ID and PREACHER_SERVICE_TYPE_ID must be set as environment variables. Run "Get IDs" first.' });
-    }
-
-    const pool = getDbPool();
-    const dbClient = await pool.connect();
-    const ctClient = new ChurchToolsClient();
-
-    const logSync = async (status, message, count = 0) => {
-        try {
-            await dbClient.query(
-                'INSERT INTO sync_log (sync_type, status, message, events_count) VALUES ($1, $2, $3, $4)',
-                ['churchtools_events_pull', status, message, count]
-            );
-        } catch (logError) {
-            console.error("Failed to write to sync_log:", logError);
-        }
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json'
+  };
+    
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: { ...headers, 'Allow': 'POST' },
+      body: JSON.stringify({ success: false, error: 'Method Not Allowed. Please use POST.' })
     };
+  }
+    
+  let pool;
+  try {
+    pool = new Pool({
+      connectionString: process.env.NEON_DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    });
 
+    const ct = new ChurchToolsClient(
+      process.env.CHURCHTOOLS_BASE_URL,
+      process.env.CHURCHTOOLS_API_TOKEN
+    );
+
+    const year = new Date().getFullYear();
+    const fromDate = `${year}-01-01`;
+    const toDate = `${year}-12-31`;
+
+    const params = new URLSearchParams({
+      'calendar_ids[]': process.env.GOTTESDIENST_CALENDAR_ID,
+      from: fromDate,
+      to: toDate,
+      limit: '1000',
+      'includes[]': 'eventServices' // Request service information
+    });
+    
+    // Note: ChurchTools documentation suggests the endpoint is /events, not /calendar/events
+    // We'll try the documented one first.
+    const eventsResponse = await ct.request(`/events?${params.toString()}`);
+    const events = eventsResponse.data || [];
+
+    let syncedCount = 0;
+    const client = await pool.connect();
     try {
-        const fromDate = new Date();
-        const toDate = new Date();
-        toDate.setFullYear(fromDate.getFullYear() + 1);
-        const from = fromDate.toISOString().split('T')[0];
-        const to = toDate.toISOString().split('T')[0];
-
-        const eventsResponse = await ctClient.get(`/api/events?calendar_ids[]=${GOTTESDIENST_CALENDAR_ID}&from=${from}&to=${to}`);
-        const events = eventsResponse.data;
-
-        if (!events || events.length === 0) {
-            await logSync('success', 'No upcoming events found in ChurchTools calendar.', 0);
-            return createResponse(200, { success: true, message: 'Keine bevorstehenden Events zum Synchronisieren gefunden.', events_processed: 0 });
-        }
-
-        await dbClient.query('BEGIN');
-        let upsertedCount = 0;
-
+        await client.query('BEGIN');
         for (const event of events) {
-            const preacherService = event.eventServices?.find(s => s.serviceId === parseInt(PREACHER_SERVICE_TYPE_ID, 10));
+            const preacherService = event.eventServices?.find(s => s.serviceId === parseInt(process.env.PREACHER_SERVICE_TYPE_ID, 10));
             
-            const preacherId = preacherService?.person?.domainIdentifier || null;
-            const preacherName = preacherService?.person?.title || null;
-            const themeTopic = preacherService?.comment || null;
+            let preacherId = null;
+            let preacherName = null;
+            let sermonDetails = { series: null, topic: null, notes: null };
+            let status = 'planned';
 
-            const query = `
-                INSERT INTO sermon_plans (churchtools_event_id, date, title, start_time, end_time, preacher_id, preacher_name, theme_topic, sync_status, last_synced)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'synced', NOW())
-                ON CONFLICT (churchtools_event_id) DO UPDATE SET
-                    date = EXCLUDED.date,
-                    title = EXCLUDED.title,
-                    start_time = EXCLUDED.start_time,
-                    end_time = EXCLUDED.end_time,
-                    preacher_id = EXCLUDED.preacher_id,
-                    preacher_name = EXCLUDED.preacher_name,
-                    theme_topic = EXCLUDED.theme_topic,
-                    sync_status = 'synced',
-                    last_synced = NOW(),
-                    updated_at = NOW()
-                WHERE 
-                    sermon_plans.preacher_id IS DISTINCT FROM EXCLUDED.preacher_id OR
-                    sermon_plans.preacher_name IS DISTINCT FROM EXCLUDED.preacher_name OR
-                    sermon_plans.theme_topic IS DISTINCT FROM EXCLUDED.theme_topic OR
-                    sermon_plans.title IS DISTINCT FROM EXCLUDED.title OR
-                    sermon_plans.start_time IS DISTINCT FROM EXCLUDED.start_time;
-            `;
+            if (preacherService && preacherService.person) {
+                preacherId = preacherService.person.id;
+                preacherName = preacherService.person.title;
+                status = preacherService.agreed ? 'confirmed' : 'assigned';
+                if(preacherService.comment) {
+                    sermonDetails = parseSermonDetailsFromComment(preacherService.comment);
+                }
+            }
 
-            const values = [
+            await client.query(`
+                INSERT INTO sermon_plans (
+                  churchtools_event_id, date, title, location, start_time, end_time, 
+                  preacher_id, preacher_name, theme_series, theme_topic, sermon_notes, status,
+                  last_synced
+                ) 
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+                ON CONFLICT (churchtools_event_id) 
+                DO UPDATE SET
+                  date = EXCLUDED.date,
+                  title = EXCLUDED.title,
+                  location = EXCLUDED.location,
+                  start_time = EXCLUDED.start_time,
+                  end_time = EXCLUDED.end_time,
+                  preacher_id = EXCLUDED.preacher_id,
+                  preacher_name = EXCLUDED.preacher_name,
+                  theme_series = EXCLUDED.theme_series,
+                  theme_topic = EXCLUDED.theme_topic,
+                  sermon_notes = EXCLUDED.sermon_notes,
+                  status = EXCLUDED.status,
+                  last_synced = NOW()
+            `, [
                 event.id,
-                new Date(event.startDate),
-                event.name,
+                event.startDate.split('T')[0],
+                event.caption,
+                event.address || '',
                 event.startDate,
                 event.endDate,
                 preacherId,
                 preacherName,
-                themeTopic,
-            ];
-
-            const res = await dbClient.query(query, values);
-            if (res.rowCount > 0) {
-              upsertedCount++;
-            }
+                sermonDetails.series,
+                sermonDetails.topic,
+                sermonDetails.notes,
+                status
+            ]);
+            syncedCount++;
         }
+        
+        await client.query(`
+          INSERT INTO sync_log (sync_type, status, message, events_count)
+          VALUES ('pull_events', 'success', 'Events erfolgreich synchronisiert', $1)
+        `, [syncedCount]);
 
-        await logSync('success', `Successfully synced ${events.length} events from ChurchTools. ${upsertedCount} were updated/inserted.`, events.length);
-        await dbClient.query('COMMIT');
-
-        return createResponse(200, { 
-            success: true, 
-            message: `Synchronisation erfolgreich. ${upsertedCount} von ${events.length} Events wurden neu erstellt oder aktualisiert.`,
-            events_processed: events.length,
-            events_upserted: upsertedCount
-        });
-
-    } catch (error) {
-        await dbClient.query('ROLLBACK');
-        await logSync('error', error.message);
-        return createResponse(500, { success: false, error: 'Synchronisation fehlgeschlagen.', details: error.message });
+        await client.query('COMMIT');
+    } catch (dbError) {
+        await client.query('ROLLBACK');
+        throw dbError;
     } finally {
-        dbClient.release();
+        client.release();
     }
+
+    return {
+      statusCode: 200,
+      headers: headers,
+      body: JSON.stringify({
+        success: true,
+        data: {
+            synced: syncedCount,
+            message: `${syncedCount} Events synchronisiert`
+        }
+      })
+    };
+
+  } catch (error) {
+    console.error('Sync Error:', error);
+    
+    if (pool) {
+      try {
+        await pool.query(`
+          INSERT INTO sync_log (sync_type, status, message, error_details)
+          VALUES ('pull_events', 'error', $1, $2::jsonb)
+        `, [error.message, JSON.stringify({ name: error.name, stack: error.stack })]);
+      } catch (logError) {
+          console.error("Failed to write error to sync_log:", logError);
+      }
+    }
+
+    return {
+      statusCode: 500,
+      headers: headers,
+      body: JSON.stringify({
+        success: false,
+        error: error.message
+      })
+    };
+  }
 };

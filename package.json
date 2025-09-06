@@ -1,15 +1,20 @@
-
 {
-  "name": "sermon-planning-app",
-  "version": "1.0.0",
-  "description": "Sermon planning app with ChurchTools integration",
-  "main": "index.js",
+  "name": "churchtools-sermon-planner",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "pg": "^8.11.3"
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   }
 }
