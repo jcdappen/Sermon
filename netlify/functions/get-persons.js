@@ -26,10 +26,21 @@ exports.handler = async (event, context) => {
     };
   }
   
+  const { CHURCHTOOLS_BASE_URL, CHURCHTOOLS_API_TOKEN } = process.env;
+  if (!CHURCHTOOLS_BASE_URL || !CHURCHTOOLS_API_TOKEN) {
+    const errorMessage = 'ChurchTools API credentials (CHURCHTOOLS_BASE_URL, CHURCHTOOLS_API_TOKEN) are not configured in environment variables.';
+    console.error(errorMessage);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ success: false, error: errorMessage }),
+    };
+  }
+
   try {
     const ct = new ChurchToolsClient(
-      process.env.CHURCHTOOLS_BASE_URL,
-      process.env.CHURCHTOOLS_API_TOKEN
+      CHURCHTOOLS_BASE_URL,
+      CHURCHTOOLS_API_TOKEN
     );
 
     const params = new URLSearchParams({
@@ -99,7 +110,7 @@ exports.handler = async (event, context) => {
       headers: headers,
       body: JSON.stringify({
         success: false,
-        error: error.message,
+        error: `Failed to get persons from ChurchTools: ${error.message}`,
       })
     };
   }

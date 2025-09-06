@@ -31,12 +31,29 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ success: false, error: 'Method Not Allowed. Please use POST.' })
     };
   }
+
+  const requiredEnvVars = [
+    'NEON_DATABASE_URL',
+    'CHURCHTOOLS_BASE_URL',
+    'CHURCHTOOLS_API_TOKEN',
+    'GOTTESDIENST_CALENDAR_ID',
+    'PREACHER_SERVICE_TYPE_ID'
+  ];
+  const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
+  if (missingEnvVars.length > 0) {
+      const msg = `Missing required environment variables: ${missingEnvVars.join(', ')}`;
+      console.error(msg);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ success: false, error: msg }),
+      };
+  }
     
   let pool;
   try {
     pool = new Pool({
       connectionString: process.env.NEON_DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
     });
 
     const ct = new ChurchToolsClient(
@@ -81,6 +98,7 @@ exports.handler = async (event, context) => {
             }
             
             const location = event.calendar?.name || event.address || '';
+            const title = event.name || event.caption || 'Unbenannter Gottesdienst';
 
             await client.query(`
                 INSERT INTO sermon_plans (
@@ -106,8 +124,8 @@ exports.handler = async (event, context) => {
             `, [
                 event.id,
                 event.startDate.split('T')[0],
-                event.name, // Corrected from event.caption
-                location, // Corrected to use calendar name primarily
+                title,
+                location,
                 event.startDate,
                 event.endDate,
                 preacherId,
@@ -164,7 +182,7 @@ exports.handler = async (event, context) => {
       headers: headers,
       body: JSON.stringify({
         success: false,
-        error: error.message
+        error: `Event synchronization failed: ${error.message}`
       })
     };
   }

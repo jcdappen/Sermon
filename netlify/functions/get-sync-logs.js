@@ -14,11 +14,18 @@ exports.handler = async (event, context) => {
     };
   }
 
+  if (!process.env.NEON_DATABASE_URL) {
+    const msg = 'Database connection string (NEON_DATABASE_URL) is not configured in environment variables.';
+    console.error(msg);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ success: false, error: msg }),
+    };
+  }
+
   const pool = new Pool({
     connectionString: process.env.NEON_DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
   });
 
   try {
@@ -33,7 +40,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ success: false, error: 'Failed to fetch sync logs' }),
+      body: JSON.stringify({ success: false, error: `Failed to fetch sync logs: ${error.message}` }),
     };
   }
 };
