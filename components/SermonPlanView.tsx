@@ -105,7 +105,6 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
                 <td className="p-4 text-sm text-gray-800 whitespace-nowrap">{formatDate(sermon.date)}</td>
                 <td className="p-4 text-sm text-gray-800">
                   <div>{sermon.title}</div>
-                  <div className="text-xs text-gray-500">{sermon.location}</div>
                 </td>
                 <td className="p-4 text-sm">
                     <PreacherDisplay name={sermon.preacher_name} category={sermon.preacher_category} status={sermon.status} />
