@@ -1,4 +1,5 @@
 
+
 const { Pool } = require('pg');
 
 exports.handler = async (event, context) => {
@@ -55,15 +56,18 @@ exports.handler = async (event, context) => {
         theme_series = $2,
         theme_topic = $3,
         sermon_notes = $4,
-        status = 'assigned',
+        status = $5,
+        preacher_category = $6,
         sync_status = 'pending',
         updated_at = NOW()
-      WHERE event_uid = $5
+      WHERE event_uid = $7
     `, [
       preacherName,
       sermonDetails.series,
       sermonDetails.topic,
       combinedNotes,
+      sermonDetails.status,
+      sermonDetails.preacherCategory,
       eventUid
     ]);
 

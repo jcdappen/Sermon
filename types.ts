@@ -9,6 +9,7 @@ export interface SermonPlan {
   start_time: string;
   end_time: string;
   preacher_name: string | null;
+  preacher_category: string | null;
   theme_series: string | null;
   theme_topic: string | null;
   sermon_notes: string | null;
@@ -51,6 +52,7 @@ export interface PreacherStat {
 
 
 export enum View {
+  DASHBOARD,
   SERMON_PLAN,
   SYNC_LOG,
   STATISTICS,

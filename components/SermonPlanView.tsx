@@ -1,36 +1,56 @@
 
+
 import React from 'react';
 import { SermonPlan } from '../types';
-import { SyncIcon, PencilIcon } from './icons/Icons';
+import { SyncIcon, PencilIcon, CalendarDaysIcon } from './icons/Icons';
 
 interface SermonPlanViewProps {
   sermonPlans: SermonPlan[];
   onAssign: (sermon: SermonPlan) => void;
+  onRecurringAssign: () => void;
   onSync: () => void;
   isLoading: boolean;
 }
 
-const StatusBadge: React.FC<{ status: SermonPlan['status'] }> = ({ status }) => {
-  const statusClasses = {
-    planned: 'bg-yellow-100 text-yellow-800',
-    assigned: 'bg-blue-100 text-blue-800',
-    confirmed: 'bg-green-100 text-green-800',
-    completed: 'bg-gray-100 text-gray-800',
-  };
-  const statusText = {
-    planned: 'Geplant',
-    assigned: 'Zugewiesen',
-    confirmed: 'Bestätigt',
-    completed: 'Abgeschlossen',
-  }
-  return (
-    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusClasses[status]}`}>
-      {statusText[status]}
-    </span>
-  );
-};
+const getCategoryColor = (category: string | null): string => {
+    switch(category) {
+        case 'Leitender Pastor': return 'text-purple-700';
+        case 'Gemeinderat': return 'text-sky-700';
+        case 'Gast': return 'text-amber-700';
+        case 'Gemeinde': return 'text-slate-700';
+        default: return 'text-gray-500';
+    }
+}
 
-const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, onSync, isLoading }) => {
+const PreacherDisplay: React.FC<{
+    name: string | null;
+    category: string | null;
+    status: SermonPlan['status'];
+}> = ({ name, category, status }) => {
+    if (!name) {
+        return <span className="text-gray-500">N/A</span>;
+    }
+
+    if (status === 'assigned') { // "assigned" is used for "angefragt"
+        return (
+            <div>
+                <span className="font-semibold text-red-600">{name}</span>
+                <span className="ml-2 text-xs text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full">Angefragt</span>
+            </div>
+        );
+    }
+    
+    if (status === 'confirmed') {
+        const colorClass = getCategoryColor(category);
+        return <span className={`font-semibold ${colorClass}`}>{name}</span>;
+    }
+    
+    // Default fallback for other statuses
+    return <span className="text-gray-500">{name}</span>;
+}
+
+
+const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, onRecurringAssign, onSync, isLoading }) => {
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('de-DE', {
       year: 'numeric',
@@ -42,16 +62,26 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
   
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 gap-2 flex-wrap">
         <h2 className="text-2xl font-bold text-gray-800">Predigtplan</h2>
-        <button
-          onClick={onSync}
-          disabled={isLoading}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors duration-200"
-        >
-          <SyncIcon className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          {isLoading ? 'Synchronisiere...' : 'Events synchronisieren'}
-        </button>
+        <div className="flex gap-2">
+         <button
+            onClick={onRecurringAssign}
+            disabled={isLoading}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-300 transition-colors duration-200"
+          >
+            <CalendarDaysIcon className="w-5 h-5 mr-2" />
+            Serienzuweisung
+          </button>
+          <button
+            onClick={onSync}
+            disabled={isLoading}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors duration-200"
+          >
+            <SyncIcon className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Synchronisiere...' : 'Events synchronisieren'}
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -66,7 +96,6 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
               <th className="p-4 text-sm font-semibold text-gray-600">Familytime</th>
               <th className="p-4 text-sm font-semibold text-gray-600">Kollekte</th>
               <th className="p-4 text-sm font-semibold text-gray-600">Abendmahl</th>
-              <th className="p-4 text-sm font-semibold text-gray-600">Status</th>
               <th className="p-4 text-sm font-semibold text-gray-600">Aktion</th>
             </tr>
           </thead>
@@ -78,13 +107,14 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
                   <div>{sermon.title}</div>
                   <div className="text-xs text-gray-500">{sermon.location}</div>
                 </td>
-                <td className="p-4 text-sm text-gray-500">{sermon.preacher_name || 'N/A'}</td>
+                <td className="p-4 text-sm">
+                    <PreacherDisplay name={sermon.preacher_name} category={sermon.preacher_category} status={sermon.status} />
+                </td>
                 <td className="p-4 text-sm text-gray-500">{sermon.theme_series || '-'}</td>
                 <td className="p-4 text-sm text-gray-500">{sermon.theme_topic || 'Thema offen'}</td>
                 <td className="p-4 text-sm text-gray-500">{sermon.family_time_responsible || '-'}</td>
                 <td className="p-4 text-sm text-gray-500">{sermon.collection_responsible || '-'}</td>
                 <td className="p-4 text-sm text-gray-500">{sermon.communion_responsible || '-'}</td>
-                <td className="p-4"><StatusBadge status={sermon.status} /></td>
                 <td className="p-4">
                   <button
                     onClick={() => onAssign(sermon)}

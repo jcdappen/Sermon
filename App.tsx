@@ -6,19 +6,22 @@ import * as api from './services/api';
 import SermonPlanView from './components/SermonPlanView';
 import SyncLogView from './components/SyncLogView';
 import StatisticsView from './components/StatisticsView';
+import DashboardView from './components/DashboardView';
 import AssignSermonModal from './components/AssignSermonModal';
-import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, InformationCircleIcon } from './components/icons/Icons';
+import RecurringAssignmentModal from './components/RecurringAssignmentModal';
+import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, InformationCircleIcon, HomeIcon } from './components/icons/Icons';
 
 // FIX: Removed React.FC type annotation to resolve a component type inference issue.
 // This was causing a cascade of scope errors where variables and functions inside the component
 // were reported as not being defined. Allowing TypeScript to infer the type fixes the issue.
 const App = () => {
-  const [view, setView] = useState<View>(View.SERMON_PLAN);
+  const [view, setView] = useState<View>(View.DASHBOARD);
   const [sermonPlans, setSermonPlans] = useState<SermonPlan[]>([]);
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [selectedSermon, setSelectedSermon] = useState<SermonPlan | null>(null);
   const [isDbSetupError, setIsDbSetupError] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
@@ -93,10 +96,15 @@ const App = () => {
     setSelectedSermon(sermon);
     setIsModalOpen(true);
   };
+  
+  const handleOpenRecurringModal = () => {
+      setIsRecurringModalOpen(true);
+  }
 
   const handleCloseModal = () => {
     setSelectedSermon(null);
     setIsModalOpen(false);
+    setIsRecurringModalOpen(false);
   };
 
   const handleSaveAssignment = async (details: {
@@ -107,6 +115,8 @@ const App = () => {
     family_time: string;
     collection: string;
     communion: string;
+    status: SermonPlan['status'];
+    preacherCategory: string;
   }) => {
     if (!selectedSermon) return;
 
@@ -124,6 +134,86 @@ const App = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handleSaveRecurringAssignment = async (details: {
+      preacherName: string;
+      series: string;
+      topic: string;
+      startDate: string;
+      endDate: string;
+      pattern: string;
+  }) => {
+      const { startDate, endDate, pattern } = details;
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const sermonsToUpdate = sermonPlans.filter(sermon => {
+         const sermonDate = new Date(sermon.date);
+         // Timezone offset correction
+         sermonDate.setMinutes(sermonDate.getMinutes() + sermonDate.getTimezoneOffset());
+
+         if (sermonDate < start || sermonDate > end) return false;
+         
+         const dayOfWeek = sermonDate.getDay(); // 0 = Sunday, 1 = Monday...
+         if(dayOfWeek !== 0) return false; // Only consider Sundays for now
+         
+         const date = sermonDate.getDate();
+         const weekOfMonth = Math.ceil(date / 7);
+
+         switch(pattern) {
+             case 'every-week': return true;
+             case 'every-2-weeks': {
+                const diffTime = Math.abs(sermonDate.getTime() - start.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffWeeks = Math.floor(diffDays / 7);
+                return diffWeeks % 2 === 0;
+             }
+             case 'first-sunday': return weekOfMonth === 1;
+             case 'second-sunday': return weekOfMonth === 2;
+             case 'third-sunday': return weekOfMonth === 3;
+             case 'fourth-sunday': return weekOfMonth === 4;
+             case 'last-sunday': {
+                const nextSunday = new Date(sermonDate);
+                nextSunday.setDate(date + 7);
+                return nextSunday.getMonth() !== sermonDate.getMonth();
+             }
+             default: return false;
+         }
+      });
+      
+      if(sermonsToUpdate.length === 0) {
+          alert("Es wurden keine passenden Gottesdienste für dieses Muster gefunden.");
+          return;
+      }
+      
+      const confirmed = confirm(`Wollen Sie wirklich ${sermonsToUpdate.length} Gottesdienste mit den neuen Details aktualisieren?`);
+      if(!confirmed) return;
+      
+      setIsLoading(true);
+      try {
+          for(const sermon of sermonsToUpdate) {
+             await api.assignPreacher(sermon.event_uid, {
+                 preacherName: details.preacherName,
+                 series: details.series,
+                 topic: details.topic,
+                 // Other fields are set to default for bulk assignment
+                 notes: '',
+                 family_time: '',
+                 collection: '',
+                 communion: '',
+                 status: 'assigned', // Default status for recurring
+                 preacherCategory: 'Gemeinde', // Default category
+             });
+          }
+          await fetchData();
+          handleCloseModal();
+      } catch (err) {
+          setError('Fehler bei der Serienzuweisung.');
+          console.error(err);
+      } finally {
+          setIsLoading(false);
+      }
   };
   
   const NavItem: React.FC<{
@@ -170,11 +260,22 @@ const App = () => {
     }
 
     switch (view) {
+      case View.DASHBOARD:
+        return (
+            <DashboardView
+                sermonPlans={sermonPlans}
+                syncLogs={syncLogs}
+                onSync={handleSyncEvents}
+                isLoading={isLoading}
+                setView={setView}
+            />
+        );
       case View.SERMON_PLAN:
         return (
           <SermonPlanView
             sermonPlans={sermonPlans}
             onAssign={handleOpenModal}
+            onRecurringAssign={handleOpenRecurringModal}
             onSync={handleSyncEvents}
             isLoading={isLoading}
           />
@@ -196,6 +297,7 @@ const App = () => {
           <p className="text-xs text-gray-500">iCal Sync</p>
         </div>
         <nav className="flex-1 p-4 space-y-2">
+           <NavItem targetView={View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />
            <NavItem targetView={View.SERMON_PLAN} icon={<DocumentTextIcon className="w-5 h-5" />} label="Predigtplan" />
            <NavItem targetView={View.STATISTICS} icon={<ChartBarIcon className="w-5 h-5" />} label="Statistiken" />
            <NavItem targetView={View.SYNC_LOG} icon={<SyncIcon className="w-5 h-5" />} label="Sync Protokoll" />
@@ -224,6 +326,13 @@ const App = () => {
           onClose={handleCloseModal}
           onSave={handleSaveAssignment}
         />
+      )}
+
+      {isRecurringModalOpen && (
+          <RecurringAssignmentModal
+            onClose={handleCloseModal}
+            onSave={handleSaveRecurringAssignment}
+          />
       )}
     </div>
   );

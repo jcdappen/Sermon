@@ -126,6 +126,8 @@ export const assignPreacher = async (
     family_time: string;
     collection: string;
     communion: string;
+    status: SermonPlan['status'];
+    preacherCategory: string;
   }
 ): Promise<{ message: string }> => {
   return await apiRequest<{ message: string }>('assign-preacher', {
