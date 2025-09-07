@@ -1,5 +1,3 @@
-
-
 export interface SermonPlan {
   id: number;
   event_uid: string;
@@ -39,18 +37,10 @@ export interface PreacherStat {
     percentage: number;
 }
 
-// FIX: Add missing Person interface to fix type error in components/PeopleView.tsx.
-export interface Person {
-  id: number;
-  name: string;
-  email: string | null;
-  can_preach: boolean;
-}
-
-
 export enum View {
   DASHBOARD,
   SERMON_PLAN,
   SYNC_LOG,
   STATISTICS,
+  PEOPLE,
 }

@@ -1,15 +1,14 @@
-
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SermonPlan, SyncLog, View } from './types';
 import * as api from './services/api';
 import SermonPlanView from './components/SermonPlanView';
 import SyncLogView from './components/SyncLogView';
 import StatisticsView from './components/StatisticsView';
 import DashboardView from './components/DashboardView';
+import PeopleView from './components/PeopleView';
 import AssignSermonModal from './components/AssignSermonModal';
 import RecurringAssignmentModal from './components/RecurringAssignmentModal';
-import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, InformationCircleIcon, HomeIcon } from './components/icons/Icons';
+import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, UsersIcon, HomeIcon } from './components/icons/Icons';
 
 
 const App = () => {
@@ -51,6 +50,22 @@ const App = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const preachers = useMemo(() => {
+    const preacherMap = new Map<string, { name: string; count: number }>();
+    sermonPlans.forEach(plan => {
+        if (plan.preacher_name) {
+            const name = plan.preacher_name;
+            const existing = preacherMap.get(name);
+            if (existing) {
+                existing.count++;
+            } else {
+                preacherMap.set(name, { name, count: 1 });
+            }
+        }
+    });
+    return Array.from(preacherMap.values()).sort((a, b) => b.count - a.count);
+  }, [sermonPlans]);
 
   const handleSyncEvents = async () => {
     setIsLoading(true);
@@ -280,6 +295,8 @@ const App = () => {
         return <SyncLogView syncLogs={syncLogs} />;
       case View.STATISTICS:
         return <StatisticsView sermonPlans={sermonPlans} />;
+      case View.PEOPLE:
+        return <PeopleView people={preachers} />;
       default:
         return null;
     }
@@ -296,6 +313,7 @@ const App = () => {
            <NavItem targetView={View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />
            <NavItem targetView={View.SERMON_PLAN} icon={<DocumentTextIcon className="w-5 h-5" />} label="Predigtplan" />
            <NavItem targetView={View.STATISTICS} icon={<ChartBarIcon className="w-5 h-5" />} label="Statistiken" />
+           <NavItem targetView={View.PEOPLE} icon={<UsersIcon className="w-5 h-5" />} label="Personen" />
            <NavItem targetView={View.SYNC_LOG} icon={<SyncIcon className="w-5 h-5" />} label="Sync Protokoll" />
         </nav>
       </aside>
