@@ -35,8 +35,8 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
   const [series, setSeries] = useState(sermon.theme_series || '');
   const [topic, setTopic] = useState(sermon.theme_topic || '');
   const [notes, setNotes] = useState(sermon.sermon_notes || '');
-  const [familyTime, setFamilyTime] = useState(sermon.family_time_responsible || '');
-  const [collection, setCollection] = useState(sermon.collection_responsible || '');
+  const [familyTime, setFamilyTime] = useState(sermon.family_time_topic || '');
+  const [collection, setCollection] = useState(sermon.collection_purpose || '');
   const [hasCommunion, setHasCommunion] = useState(sermon.communion_responsible === 'Ja');
 
 
@@ -137,31 +137,31 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
             </div>
             
             <div className="pt-4 border-t">
-                <h4 className="text-md font-semibold text-gray-800 mb-2">Verantwortlichkeiten</h4>
+                <h4 className="text-md font-semibold text-gray-800 mb-2">Details zum Gottesdienst</h4>
                 <div className="space-y-4">
                     <div>
                       <label htmlFor="familyTime" className="block text-sm font-medium text-gray-700 mb-1">
-                        Familytime
+                        Familytime-Thema
                       </label>
                        <input
                         type="text"
                         id="familyTime"
                         value={familyTime}
                         onChange={(e) => setFamilyTime(e.target.value)}
-                        placeholder="Verantwortliche Person / Team"
+                        placeholder="Thema der Familytime"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
                     <div>
                       <label htmlFor="collection" className="block text-sm font-medium text-gray-700 mb-1">
-                        Kollekte
+                        Kollekte für
                       </label>
                       <input
                         type="text"
                         id="collection"
                         value={collection}
                         onChange={(e) => setCollection(e.target.value)}
-                        placeholder="Verantwortliche Person / Team"
+                        placeholder="Zweck der Kollekte"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>

@@ -154,6 +154,8 @@ const App = () => {
       startDate: string;
       endDate: string;
       pattern: string;
+      collection: string;
+      familyTime: string;
   }) => {
       const { startDate, endDate, pattern } = details;
       const start = new Date(startDate);
@@ -198,23 +200,29 @@ const App = () => {
           return;
       }
       
-      const confirmed = confirm(`Wollen Sie wirklich ${sermonsToUpdate.length} Gottesdienste mit den neuen Details aktualisieren?`);
+      const confirmationMessage = `Wollen Sie wirklich ${sermonsToUpdate.length} Gottesdienste aktualisieren? Leere Felder in diesem Formular überschreiben bestehende Werte (z.B. wird ein leerer Predigername bestehende Zuweisungen entfernen).`;
+
+      const confirmed = confirm(confirmationMessage);
       if(!confirmed) return;
       
       setIsLoading(true);
       try {
           for(const sermon of sermonsToUpdate) {
+             // If a field in the modal is filled, use its value.
+             // If it's empty, use its empty value (to clear existing data).
+             // For fields NOT in the modal (notes, communion), preserve the original data.
+             const isAssigningPreacher = details.preacherName.trim() !== '';
+
              await api.assignPreacher(sermon.event_uid, {
                  preacherName: details.preacherName,
                  series: details.series,
                  topic: details.topic,
-                 // Other fields are set to default for bulk assignment
-                 notes: '',
-                 family_time: '',
-                 collection: '',
-                 communion: '',
-                 status: 'assigned', // Default status for recurring
-                 preacherCategory: 'Gemeinde', // Default category
+                 notes: sermon.sermon_notes || '', // Preserve notes
+                 family_time: details.familyTime,
+                 collection: details.collection,
+                 communion: sermon.communion_responsible || '', // Preserve communion
+                 status: isAssigningPreacher ? 'assigned' : sermon.status,
+                 preacherCategory: isAssigningPreacher ? 'Gemeinde' : (sermon.preacher_category || ''),
              });
           }
           await fetchData();

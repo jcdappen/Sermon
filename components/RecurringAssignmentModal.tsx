@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { XMarkIcon } from './icons/Icons';
 
@@ -12,6 +10,8 @@ interface RecurringAssignmentModalProps {
     startDate: string;
     endDate: string;
     pattern: string;
+    collection: string;
+    familyTime: string;
   }) => void;
 }
 
@@ -22,6 +22,8 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
   const [preacherName, setPreacherName] = useState('');
   const [series, setSeries] = useState('');
   const [topic, setTopic] = useState('');
+  const [collection, setCollection] = useState('');
+  const [familyTime, setFamilyTime] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(() => {
     const date = new Date();
@@ -32,10 +34,15 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!preacherName.trim()) {
-      alert('Bitte geben Sie einen Prediger an.');
-      return;
+    
+    const hasData = [preacherName, series, topic, collection, familyTime]
+        .some(field => field.trim() !== '');
+
+    if (!hasData) {
+        alert('Bitte füllen Sie mindestens ein Zuweisungsfeld aus (Prediger, Serie, Thema, Kollekte oder Familytime).');
+        return;
     }
+    
     if (!startDate || !endDate) {
         alert('Bitte wählen Sie ein Start- und Enddatum.');
         return;
@@ -46,7 +53,9 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
       topic,
       startDate,
       endDate,
-      pattern
+      pattern,
+      collection,
+      familyTime,
     });
   };
 
@@ -64,7 +73,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
             {/* General Details */}
             <div>
               <label htmlFor="preacher" className="block text-sm font-medium text-gray-700 mb-1">
-                Prediger
+                Prediger (optional)
               </label>
               <input
                 type="text"
@@ -73,12 +82,11 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                 onChange={(e) => setPreacherName(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Name des Predigers"
-                required
               />
             </div>
             <div>
               <label htmlFor="series" className="block text-sm font-medium text-gray-700 mb-1">
-                Predigtserie
+                Predigtserie (optional)
               </label>
               <input
                 type="text"
@@ -99,6 +107,32 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="Wird für alle Termine übernommen"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+             <div>
+              <label htmlFor="familyTime" className="block text-sm font-medium text-gray-700 mb-1">
+                Familytime-Thema
+              </label>
+              <input
+                type="text"
+                id="familyTime"
+                value={familyTime}
+                onChange={(e) => setFamilyTime(e.target.value)}
+                placeholder="Thema der Familytime"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+             <div>
+              <label htmlFor="collection" className="block text-sm font-medium text-gray-700 mb-1">
+                Kollekte für
+              </label>
+              <input
+                type="text"
+                id="collection"
+                value={collection}
+                onChange={(e) => setCollection(e.target.value)}
+                placeholder="Zweck der Kollekte"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>

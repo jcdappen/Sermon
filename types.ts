@@ -11,8 +11,8 @@ export interface SermonPlan {
   theme_series: string | null;
   theme_topic: string | null;
   sermon_notes: string | null;
-  family_time_responsible: string | null;
-  collection_responsible: string | null;
+  family_time_topic: string | null;
+  collection_purpose: string | null;
   communion_responsible: string | null;
   status: 'planned' | 'assigned' | 'confirmed' | 'completed';
   sync_status: 'synced' | 'pending' | 'error';

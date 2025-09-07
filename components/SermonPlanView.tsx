@@ -93,8 +93,8 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
               <th className="p-4 text-sm font-semibold text-gray-600">Prediger</th>
               <th className="p-4 text-sm font-semibold text-gray-600">Predigtserie</th>
               <th className="p-4 text-sm font-semibold text-gray-600">Thema</th>
-              <th className="p-4 text-sm font-semibold text-gray-600">Familytime</th>
-              <th className="p-4 text-sm font-semibold text-gray-600">Kollekte</th>
+              <th className="p-4 text-sm font-semibold text-gray-600">Familytime-Thema</th>
+              <th className="p-4 text-sm font-semibold text-gray-600">Kollekte für</th>
               <th className="p-4 text-sm font-semibold text-gray-600">Abendmahl</th>
               <th className="p-4 text-sm font-semibold text-gray-600">Aktion</th>
             </tr>
@@ -112,8 +112,8 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
                 </td>
                 <td className="p-4 text-sm text-gray-500">{sermon.theme_series || '-'}</td>
                 <td className="p-4 text-sm text-gray-500">{sermon.theme_topic || 'Thema offen'}</td>
-                <td className="p-4 text-sm text-gray-500">{sermon.family_time_responsible || '-'}</td>
-                <td className="p-4 text-sm text-gray-500">{sermon.collection_responsible || '-'}</td>
+                <td className="p-4 text-sm text-gray-500">{sermon.family_time_topic || '-'}</td>
+                <td className="p-4 text-sm text-gray-500">{sermon.collection_purpose || '-'}</td>
                 <td className="p-4 text-sm text-gray-500">{sermon.communion_responsible || '-'}</td>
                 <td className="p-4">
                   <button

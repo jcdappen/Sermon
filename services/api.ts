@@ -52,21 +52,21 @@ async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promi
 function parseSermonPlanNotes(plan: SermonPlan): SermonPlan {
     const notes = plan.sermon_notes;
     // Create a mutable copy of the plan to modify
-    let newPlan = { ...plan };
+    let newPlan: SermonPlan = { ...plan };
 
     // Default values if notes are empty
     if (!notes) {
         newPlan.sermon_notes = null;
-        newPlan.family_time_responsible = null;
-        newPlan.collection_responsible = null;
+        newPlan.family_time_topic = null;
+        newPlan.collection_purpose = null;
         newPlan.communion_responsible = null;
         return newPlan;
     }
 
     const details = {
         sermon_notes_parts: [] as string[],
-        family_time_responsible: null as string | null,
-        collection_responsible: null as string | null,
+        family_time_topic: null as string | null,
+        collection_purpose: null as string | null,
         communion_responsible: null as string | null
     };
 
@@ -74,9 +74,9 @@ function parseSermonPlanNotes(plan: SermonPlan): SermonPlan {
 
     for (const part of parts) {
         if (part.toLowerCase().startsWith('familytime:')) {
-            details.family_time_responsible = part.substring('familytime:'.length).trim();
+            details.family_time_topic = part.substring('familytime:'.length).trim();
         } else if (part.toLowerCase().startsWith('kollekte:')) {
-            details.collection_responsible = part.substring('kollekte:'.length).trim();
+            details.collection_purpose = part.substring('kollekte:'.length).trim();
         } else if (part.toLowerCase().startsWith('abendmahl:')) {
             details.communion_responsible = part.substring('abendmahl:'.length).trim();
         } else if (part.toLowerCase().startsWith('notizen:')) {
@@ -89,8 +89,8 @@ function parseSermonPlanNotes(plan: SermonPlan): SermonPlan {
     
     // Reconstruct the sermon_notes from only the note parts
     newPlan.sermon_notes = details.sermon_notes_parts.join(' | ') || null;
-    newPlan.family_time_responsible = details.family_time_responsible;
-    newPlan.collection_responsible = details.collection_responsible;
+    newPlan.family_time_topic = details.family_time_topic;
+    newPlan.collection_purpose = details.collection_purpose;
     newPlan.communion_responsible = details.communion_responsible;
 
     return newPlan;
