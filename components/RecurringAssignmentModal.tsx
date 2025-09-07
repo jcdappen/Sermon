@@ -2,13 +2,10 @@
 
 import React, { useState } from 'react';
 import { XMarkIcon } from './icons/Icons';
-import { Person } from '../types';
 
 interface RecurringAssignmentModalProps {
-  persons: Person[];
   onClose: () => void;
   onSave: (details: {
-    preacherId: number | null;
     preacherName: string;
     series: string;
     topic: string;
@@ -19,11 +16,10 @@ interface RecurringAssignmentModalProps {
 }
 
 const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
-  persons,
   onClose,
   onSave,
 }) => {
-  const [preacherId, setPreacherId] = useState('');
+  const [preacherName, setPreacherName] = useState('');
   const [series, setSeries] = useState('');
   const [topic, setTopic] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -36,9 +32,8 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const selectedPerson = persons.find(p => p.id.toString() === preacherId);
-    if (!selectedPerson) {
-      alert('Bitte wählen Sie einen Prediger aus.');
+    if (!preacherName.trim()) {
+      alert('Bitte geben Sie einen Prediger an.');
       return;
     }
     if (!startDate || !endDate) {
@@ -46,8 +41,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
         return;
     }
     onSave({
-      preacherId: selectedPerson.id,
-      preacherName: selectedPerson.name,
+      preacherName,
       series,
       topic,
       startDate,
@@ -72,18 +66,15 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
               <label htmlFor="preacher" className="block text-sm font-medium text-gray-700 mb-1">
                 Prediger
               </label>
-              <select
+              <input
+                type="text"
                 id="preacher"
-                value={preacherId}
-                onChange={(e) => setPreacherId(e.target.value)}
+                value={preacherName}
+                onChange={(e) => setPreacherName(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Name des Predigers"
                 required
-              >
-                 <option value="">-- Prediger auswählen --</option>
-                 {persons.map(person => (
-                    <option key={person.id} value={person.id}>{person.name}</option>
-                 ))}
-              </select>
+              />
             </div>
             <div>
               <label htmlFor="series" className="block text-sm font-medium text-gray-700 mb-1">

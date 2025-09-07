@@ -1,15 +1,13 @@
 
 
 import React, { useState } from 'react';
-import { SermonPlan, Person } from '../types';
+import { SermonPlan } from '../types';
 import { XMarkIcon } from './icons/Icons';
 
 interface AssignSermonModalProps {
   sermon: SermonPlan;
-  persons: Person[];
   onClose: () => void;
   onSave: (details: {
-    preacherId: number | null;
     preacherName: string;
     series: string;
     topic: string;
@@ -26,11 +24,10 @@ const PREACHER_CATEGORIES = ['Gemeinde', 'Gemeinderat', 'Gast', 'Leitender Pasto
 
 const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
   sermon,
-  persons,
   onClose,
   onSave,
 }) => {
-  const [preacherId, setPreacherId] = useState(sermon.preacher_id?.toString() || '');
+  const [preacherName, setPreacherName] = useState(sermon.preacher_name || '');
   const [preacherCategory, setPreacherCategory] = useState(sermon.preacher_category || 'Gemeinde');
   const [status, setStatus] = useState<SermonPlan['status']>(
     sermon.status === 'confirmed' ? 'confirmed' : 'assigned'
@@ -45,11 +42,9 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const selectedPerson = persons.find(p => p.id.toString() === preacherId);
 
     onSave({
-      preacherId: selectedPerson ? selectedPerson.id : null,
-      preacherName: selectedPerson ? selectedPerson.name : '',
+      preacherName: preacherName,
       series,
       topic,
       notes,
@@ -77,17 +72,14 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                   <label htmlFor="preacher" className="block text-sm font-medium text-gray-700 mb-1">
                     Prediger
                   </label>
-                  <select
+                  <input
+                    type="text"
                     id="preacher"
-                    value={preacherId}
-                    onChange={(e) => setPreacherId(e.target.value)}
+                    value={preacherName}
+                    onChange={(e) => setPreacherName(e.target.value)}
+                    placeholder="Name des Predigers"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">-- Prediger auswählen --</option>
-                    {persons.map(person => (
-                        <option key={person.id} value={person.id}>{person.name}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
                 <div>
                   <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
@@ -151,17 +143,14 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                       <label htmlFor="familyTime" className="block text-sm font-medium text-gray-700 mb-1">
                         Familytime
                       </label>
-                      <select
+                       <input
+                        type="text"
                         id="familyTime"
                         value={familyTime}
                         onChange={(e) => setFamilyTime(e.target.value)}
+                        placeholder="Verantwortliche Person / Team"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      >
-                         <option value="">-- Person auswählen --</option>
-                         {persons.map(person => (
-                            <option key={person.id} value={person.name}>{person.name}</option>
-                         ))}
-                      </select>
+                      />
                     </div>
                     <div>
                       <label htmlFor="collection" className="block text-sm font-medium text-gray-700 mb-1">

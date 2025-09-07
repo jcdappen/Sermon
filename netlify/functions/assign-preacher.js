@@ -34,7 +34,6 @@ exports.handler = async (event, context) => {
   try {
     const { eventUid, sermonDetails } = JSON.parse(event.body);
     const { 
-        preacherId,
         preacherName,
         series,
         topic,
@@ -63,18 +62,16 @@ exports.handler = async (event, context) => {
     await pool.query(`
       UPDATE sermon_plans 
       SET 
-        preacher_id = $1,
-        preacher_name = $2,
-        theme_series = $3,
-        theme_topic = $4,
-        sermon_notes = $5,
-        status = $6,
-        preacher_category = $7,
+        preacher_name = $1,
+        theme_series = $2,
+        theme_topic = $3,
+        sermon_notes = $4,
+        status = $5,
+        preacher_category = $6,
         sync_status = 'pending',
         updated_at = NOW()
-      WHERE event_uid = $8
+      WHERE event_uid = $7
     `, [
-      preacherId,
       preacherName,
       series,
       topic,

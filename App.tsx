@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { SermonPlan, SyncLog, View, Person } from './types';
+import { SermonPlan, SyncLog, View } from './types';
 import * as api from './services/api';
 import SermonPlanView from './components/SermonPlanView';
 import SyncLogView from './components/SyncLogView';
@@ -9,14 +9,12 @@ import StatisticsView from './components/StatisticsView';
 import DashboardView from './components/DashboardView';
 import AssignSermonModal from './components/AssignSermonModal';
 import RecurringAssignmentModal from './components/RecurringAssignmentModal';
-import PeopleView from './components/PeopleView';
-import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, InformationCircleIcon, HomeIcon, UsersIcon } from './components/icons/Icons';
+import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, InformationCircleIcon, HomeIcon } from './components/icons/Icons';
 
 
 const App = () => {
   const [view, setView] = useState<View>(View.DASHBOARD);
   const [sermonPlans, setSermonPlans] = useState<SermonPlan[]>([]);
-  const [persons, setPersons] = useState<Person[]>([]);
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,38 +22,23 @@ const App = () => {
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [selectedSermon, setSelectedSermon] = useState<SermonPlan | null>(null);
   const [isDbSetupError, setIsDbSetupError] = useState(false);
-  const [configError, setConfigError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setConfigError(null);
     setIsDbSetupError(false);
     try {
-      const [plans, logs, personsData] = await Promise.all([
+      const [plans, logs] = await Promise.all([
         api.getSermonPlans(),
         api.getSyncLogs(),
-        api.getPersons(),
       ]);
       setSermonPlans(plans);
       setSyncLogs(logs);
-      setPersons(personsData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage.includes('relation "sermon_plans" does not exist')) {
         setError('Die Datenbank ist noch nicht eingerichtet. Bitte führen Sie die Ersteinrichtung durch.');
         setIsDbSetupError(true);
-      } else if (errorMessage.includes('ChurchTools API credentials')) {
-        setConfigError('ChurchTools API ist nicht konfiguriert. Bitte fügen Sie die Umgebungsvariablen CHURCHTOOLS_BASE_URL und CHURCHTOOLS_API_TOKEN in Ihren Netlify-Einstellungen hinzu, um die Personenliste zu laden.');
-        // Try to load other data anyway
-        try {
-            const [plans, logs] = await Promise.all([api.getSermonPlans(), api.getSyncLogs()]);
-            setSermonPlans(plans);
-            setSyncLogs(logs);
-        } catch (fallbackErr) {
-            console.error(fallbackErr);
-            setError('Fehler beim Laden der Plandaten.');
-        }
       } else {
         setError('Fehler beim Laden der Daten.');
       }
@@ -72,7 +55,6 @@ const App = () => {
   const handleSyncEvents = async () => {
     setIsLoading(true);
     setError(null);
-    setConfigError(null);
     try {
       const result = await api.syncEvents();
       alert(result.message);
@@ -80,7 +62,7 @@ const App = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
        if (errorMessage.includes('Missing required environment variables: ICAL_URL')) {
-        setConfigError('Die iCal-URL ist nicht konfiguriert. Bitte fügen Sie die Umgebungsvariable ICAL_URL in Ihren Netlify-Build-Einstellungen hinzu, um Gottesdienste synchronisieren zu können.');
+        setError('Die iCal-URL ist nicht konfiguriert. Bitte fügen Sie die Umgebungsvariable ICAL_URL in Ihren Netlify-Build-Einstellungen hinzu, um Gottesdienste synchronisieren zu können.');
       } else {
         setError('Fehler bei der Synchronisation der Events.');
       }
@@ -122,7 +104,6 @@ const App = () => {
   };
 
   const handleSaveAssignment = async (details: {
-    preacherId: number | null;
     preacherName: string;
     series: string;
     topic: string;
@@ -152,7 +133,6 @@ const App = () => {
   };
   
   const handleSaveRecurringAssignment = async (details: {
-      preacherId: number | null;
       preacherName: string;
       series: string;
       topic: string;
@@ -210,7 +190,6 @@ const App = () => {
       try {
           for(const sermon of sermonsToUpdate) {
              await api.assignPreacher(sermon.event_uid, {
-                 preacherId: details.preacherId,
                  preacherName: details.preacherName,
                  series: details.series,
                  topic: details.topic,
@@ -297,8 +276,6 @@ const App = () => {
             isLoading={isLoading}
           />
         );
-      case View.PEOPLE:
-        return <PeopleView people={persons} />;
       case View.SYNC_LOG:
         return <SyncLogView syncLogs={syncLogs} />;
       case View.STATISTICS:
@@ -318,32 +295,17 @@ const App = () => {
         <nav className="flex-1 p-4 space-y-2">
            <NavItem targetView={View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />
            <NavItem targetView={View.SERMON_PLAN} icon={<DocumentTextIcon className="w-5 h-5" />} label="Predigtplan" />
-           <NavItem targetView={View.PEOPLE} icon={<UsersIcon className="w-5 h-5" />} label="Personen" />
            <NavItem targetView={View.STATISTICS} icon={<ChartBarIcon className="w-5 h-5" />} label="Statistiken" />
            <NavItem targetView={View.SYNC_LOG} icon={<SyncIcon className="w-5 h-5" />} label="Sync Protokoll" />
         </nav>
       </aside>
       <main className="flex-1 p-6 overflow-auto">
-        {configError && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md shadow-md" role="alert">
-            <div className="flex">
-              <div className="py-1">
-                <InformationCircleIcon className="w-6 h-6 text-red-500 mr-4" />
-              </div>
-              <div>
-                <p className="font-bold">Konfigurationsfehler</p>
-                <p className="text-sm">{configError}</p>
-              </div>
-            </div>
-          </div>
-        )}
         {renderView()}
       </main>
 
       {isModalOpen && selectedSermon && (
         <AssignSermonModal
           sermon={selectedSermon}
-          persons={persons}
           onClose={handleCloseModal}
           onSave={handleSaveAssignment}
         />
@@ -351,7 +313,6 @@ const App = () => {
 
       {isRecurringModalOpen && (
           <RecurringAssignmentModal
-            persons={persons}
             onClose={handleCloseModal}
             onSave={handleSaveRecurringAssignment}
           />
