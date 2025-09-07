@@ -32,8 +32,20 @@ exports.handler = async (event, context) => {
 
   let pool;
   try {
-    const { eventUid, preacherName, sermonDetails } = JSON.parse(event.body);
-    
+    const { eventUid, sermonDetails } = JSON.parse(event.body);
+    const { 
+        preacherId,
+        preacherName,
+        series,
+        topic,
+        notes,
+        family_time,
+        collection,
+        communion,
+        status,
+        preacherCategory 
+    } = sermonDetails;
+
     pool = new Pool({
       connectionString: process.env.NETLIFY_DATABASE_URL
     });
@@ -41,40 +53,41 @@ exports.handler = async (event, context) => {
     // Create a combined notes string for the local database to store all details
     // in a single field, avoiding schema change requirements.
     const combinedNotes = [
-        sermonDetails.notes ? `Notizen: ${sermonDetails.notes}` : null,
-        sermonDetails.family_time ? `Familytime: ${sermonDetails.family_time}` : null,
-        sermonDetails.collection ? `Kollekte: ${sermonDetails.collection}` : null,
-        sermonDetails.communion ? `Abendmahl: ${sermonDetails.communion}` : null
+        notes ? `Notizen: ${notes}` : null,
+        family_time ? `Familytime: ${family_time}` : null,
+        collection ? `Kollekte: ${collection}` : null,
+        communion ? `Abendmahl: ${communion}` : null
     ].filter(Boolean).join(' | ');
 
-    // Update the local database. Responsibilities are stored in the combined sermon_notes field
-    // to prevent crashes if the corresponding database columns do not exist.
+    // Update the local database.
     await pool.query(`
       UPDATE sermon_plans 
       SET 
-        preacher_name = $1,
-        theme_series = $2,
-        theme_topic = $3,
-        sermon_notes = $4,
-        status = $5,
-        preacher_category = $6,
+        preacher_id = $1,
+        preacher_name = $2,
+        theme_series = $3,
+        theme_topic = $4,
+        sermon_notes = $5,
+        status = $6,
+        preacher_category = $7,
         sync_status = 'pending',
         updated_at = NOW()
-      WHERE event_uid = $7
+      WHERE event_uid = $8
     `, [
+      preacherId,
       preacherName,
-      sermonDetails.series,
-      sermonDetails.topic,
+      series,
+      topic,
       combinedNotes,
-      sermonDetails.status,
-      sermonDetails.preacherCategory,
+      status,
+      preacherCategory,
       eventUid
     ]);
 
     await pool.query(`
       INSERT INTO sync_log (sync_type, status, message, events_count)
       VALUES ('assign_preacher', 'success', $1, 1)
-    `, [`Prediger ${preacherName} zu Event zugewiesen (UID: ${eventUid})`]);
+    `, [`Prediger ${preacherName || 'N/A'} zu Event zugewiesen (UID: ${eventUid})`]);
 
     return {
       statusCode: 200,

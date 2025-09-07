@@ -8,6 +8,7 @@ export interface SermonPlan {
   location: string;
   start_time: string;
   end_time: string;
+  preacher_id: number | null;
   preacher_name: string | null;
   preacher_category: string | null;
   theme_series: string | null;
@@ -33,7 +34,6 @@ export interface SyncLog {
   synced_at: string;
 }
 
-// FIX: Add Person interface to resolve missing type error in PeopleView.tsx.
 export interface Person {
   id: number;
   first_name: string;
@@ -56,4 +56,5 @@ export enum View {
   SERMON_PLAN,
   SYNC_LOG,
   STATISTICS,
+  PEOPLE,
 }

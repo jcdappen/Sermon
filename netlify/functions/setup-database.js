@@ -77,6 +77,12 @@ exports.handler = async (event, context) => {
       ALTER TABLE sermon_plans
       ADD COLUMN IF NOT EXISTS preacher_category VARCHAR(50);
     `);
+    
+    // Add preacher_id column if it doesn't exist
+    await client.query(`
+      ALTER TABLE sermon_plans
+      ADD COLUMN IF NOT EXISTS preacher_id INTEGER;
+    `);
 
 
     // Check if the 'event_uid' column exists. If not, this is an older schema.

@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { SermonPlan, SyncLog, View } from './types';
+import { SermonPlan, SyncLog, View, Person } from './types';
 import * as api from './services/api';
 import SermonPlanView from './components/SermonPlanView';
 import SyncLogView from './components/SyncLogView';
@@ -9,14 +9,14 @@ import StatisticsView from './components/StatisticsView';
 import DashboardView from './components/DashboardView';
 import AssignSermonModal from './components/AssignSermonModal';
 import RecurringAssignmentModal from './components/RecurringAssignmentModal';
-import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, InformationCircleIcon, HomeIcon } from './components/icons/Icons';
+import PeopleView from './components/PeopleView';
+import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, InformationCircleIcon, HomeIcon, UsersIcon } from './components/icons/Icons';
 
-// FIX: Removed React.FC type annotation to resolve a component type inference issue.
-// This was causing a cascade of scope errors where variables and functions inside the component
-// were reported as not being defined. Allowing TypeScript to infer the type fixes the issue.
+
 const App = () => {
   const [view, setView] = useState<View>(View.DASHBOARD);
   const [sermonPlans, setSermonPlans] = useState<SermonPlan[]>([]);
+  const [persons, setPersons] = useState<Person[]>([]);
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,19 +29,33 @@ const App = () => {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setConfigError(null);
     setIsDbSetupError(false);
     try {
-      const [plans, logs] = await Promise.all([
+      const [plans, logs, personsData] = await Promise.all([
         api.getSermonPlans(),
         api.getSyncLogs(),
+        api.getPersons(),
       ]);
       setSermonPlans(plans);
       setSyncLogs(logs);
+      setPersons(personsData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage.includes('relation "sermon_plans" does not exist')) {
         setError('Die Datenbank ist noch nicht eingerichtet. Bitte führen Sie die Ersteinrichtung durch.');
         setIsDbSetupError(true);
+      } else if (errorMessage.includes('ChurchTools API credentials')) {
+        setConfigError('ChurchTools API ist nicht konfiguriert. Bitte fügen Sie die Umgebungsvariablen CHURCHTOOLS_BASE_URL und CHURCHTOOLS_API_TOKEN in Ihren Netlify-Einstellungen hinzu, um die Personenliste zu laden.');
+        // Try to load other data anyway
+        try {
+            const [plans, logs] = await Promise.all([api.getSermonPlans(), api.getSyncLogs()]);
+            setSermonPlans(plans);
+            setSyncLogs(logs);
+        } catch (fallbackErr) {
+            console.error(fallbackErr);
+            setError('Fehler beim Laden der Plandaten.');
+        }
       } else {
         setError('Fehler beim Laden der Daten.');
       }
@@ -108,6 +122,7 @@ const App = () => {
   };
 
   const handleSaveAssignment = async (details: {
+    preacherId: number | null;
     preacherName: string;
     series: string;
     topic: string;
@@ -137,6 +152,7 @@ const App = () => {
   };
   
   const handleSaveRecurringAssignment = async (details: {
+      preacherId: number | null;
       preacherName: string;
       series: string;
       topic: string;
@@ -194,6 +210,7 @@ const App = () => {
       try {
           for(const sermon of sermonsToUpdate) {
              await api.assignPreacher(sermon.event_uid, {
+                 preacherId: details.preacherId,
                  preacherName: details.preacherName,
                  series: details.series,
                  topic: details.topic,
@@ -280,6 +297,8 @@ const App = () => {
             isLoading={isLoading}
           />
         );
+      case View.PEOPLE:
+        return <PeopleView people={persons} />;
       case View.SYNC_LOG:
         return <SyncLogView syncLogs={syncLogs} />;
       case View.STATISTICS:
@@ -294,11 +313,12 @@ const App = () => {
       <aside className="w-64 bg-white shadow-md flex flex-col">
         <div className="p-4 border-b">
           <h1 className="text-xl font-bold text-gray-800">Predigtplaner</h1>
-          <p className="text-xs text-gray-500">iCal Sync</p>
+          <p className="text-xs text-gray-500">ChurchTools Sync</p>
         </div>
         <nav className="flex-1 p-4 space-y-2">
            <NavItem targetView={View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />
            <NavItem targetView={View.SERMON_PLAN} icon={<DocumentTextIcon className="w-5 h-5" />} label="Predigtplan" />
+           <NavItem targetView={View.PEOPLE} icon={<UsersIcon className="w-5 h-5" />} label="Personen" />
            <NavItem targetView={View.STATISTICS} icon={<ChartBarIcon className="w-5 h-5" />} label="Statistiken" />
            <NavItem targetView={View.SYNC_LOG} icon={<SyncIcon className="w-5 h-5" />} label="Sync Protokoll" />
         </nav>
@@ -323,6 +343,7 @@ const App = () => {
       {isModalOpen && selectedSermon && (
         <AssignSermonModal
           sermon={selectedSermon}
+          persons={persons}
           onClose={handleCloseModal}
           onSave={handleSaveAssignment}
         />
@@ -330,6 +351,7 @@ const App = () => {
 
       {isRecurringModalOpen && (
           <RecurringAssignmentModal
+            persons={persons}
             onClose={handleCloseModal}
             onSave={handleSaveRecurringAssignment}
           />

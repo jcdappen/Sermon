@@ -1,4 +1,4 @@
-import { SermonPlan, SyncLog } from '../types';
+import { SermonPlan, SyncLog, Person } from '../types';
 
 // Helper interface for the standardized API response
 interface ApiResponse<T> {
@@ -96,6 +96,10 @@ function parseSermonPlanNotes(plan: SermonPlan): SermonPlan {
     return newPlan;
 }
 
+export const getPersons = async (): Promise<Person[]> => {
+  return await apiRequest<Person[]>('get-persons') || [];
+};
+
 export const getSermonPlans = async (): Promise<SermonPlan[]> => {
   const plans = await apiRequest<SermonPlan[]>('get-sermon-plans');
   if (!plans) return [];
@@ -119,6 +123,7 @@ export const syncEvents = async (): Promise<{ message: string; synced: number }>
 export const assignPreacher = async (
   eventUid: string,
   sermonDetails: { 
+    preacherId: number | null;
     preacherName: string;
     series: string; 
     topic: string; 
@@ -135,7 +140,6 @@ export const assignPreacher = async (
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       eventUid,
-      preacherName: sermonDetails.preacherName,
       sermonDetails
     }),
   });

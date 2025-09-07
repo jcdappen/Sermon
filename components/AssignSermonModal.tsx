@@ -1,13 +1,15 @@
 
 
 import React, { useState } from 'react';
-import { SermonPlan } from '../types';
+import { SermonPlan, Person } from '../types';
 import { XMarkIcon } from './icons/Icons';
 
 interface AssignSermonModalProps {
   sermon: SermonPlan;
+  persons: Person[];
   onClose: () => void;
   onSave: (details: {
+    preacherId: number | null;
     preacherName: string;
     series: string;
     topic: string;
@@ -24,10 +26,11 @@ const PREACHER_CATEGORIES = ['Gemeinde', 'Gemeinderat', 'Gast', 'Leitender Pasto
 
 const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
   sermon,
+  persons,
   onClose,
   onSave,
 }) => {
-  const [preacherName, setPreacherName] = useState(sermon.preacher_name || '');
+  const [preacherId, setPreacherId] = useState(sermon.preacher_id?.toString() || '');
   const [preacherCategory, setPreacherCategory] = useState(sermon.preacher_category || 'Gemeinde');
   const [status, setStatus] = useState<SermonPlan['status']>(
     sermon.status === 'confirmed' ? 'confirmed' : 'assigned'
@@ -37,22 +40,22 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
   const [notes, setNotes] = useState(sermon.sermon_notes || '');
   const [familyTime, setFamilyTime] = useState(sermon.family_time_responsible || '');
   const [collection, setCollection] = useState(sermon.collection_responsible || '');
-  const [communion, setCommunion] = useState(sermon.communion_responsible || '');
+  const [hasCommunion, setHasCommunion] = useState(sermon.communion_responsible === 'Ja');
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!preacherName.trim()) {
-        alert('Bitte geben Sie den Namen des Predigers ein.');
-        return;
-    }
+    const selectedPerson = persons.find(p => p.id.toString() === preacherId);
+
     onSave({
-      preacherName: preacherName.trim(),
+      preacherId: selectedPerson ? selectedPerson.id : null,
+      preacherName: selectedPerson ? selectedPerson.name : '',
       series,
       topic,
       notes,
       family_time: familyTime,
       collection,
-      communion,
+      communion: hasCommunion ? 'Ja' : '',
       status,
       preacherCategory,
     });
@@ -74,15 +77,17 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                   <label htmlFor="preacher" className="block text-sm font-medium text-gray-700 mb-1">
                     Prediger
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="preacher"
-                    value={preacherName}
-                    onChange={(e) => setPreacherName(e.target.value)}
-                    placeholder="Name des Predigers"
+                    value={preacherId}
+                    onChange={(e) => setPreacherId(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
+                  >
+                    <option value="">-- Prediger auswählen --</option>
+                    {persons.map(person => (
+                        <option key={person.id} value={person.id}>{person.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
@@ -138,45 +143,54 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-             <div>
-              <label htmlFor="familyTime" className="block text-sm font-medium text-gray-700 mb-1">
-                Familytime
-              </label>
-              <input
-                type="text"
-                id="familyTime"
-                value={familyTime}
-                onChange={(e) => setFamilyTime(e.target.value)}
-                placeholder="Verantwortliche Person / Team"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
+            
+            <div className="pt-4 border-t">
+                <h4 className="text-md font-semibold text-gray-800 mb-2">Verantwortlichkeiten</h4>
+                <div className="space-y-4">
+                    <div>
+                      <label htmlFor="familyTime" className="block text-sm font-medium text-gray-700 mb-1">
+                        Familytime
+                      </label>
+                      <select
+                        id="familyTime"
+                        value={familyTime}
+                        onChange={(e) => setFamilyTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                         <option value="">-- Person auswählen --</option>
+                         {persons.map(person => (
+                            <option key={person.id} value={person.name}>{person.name}</option>
+                         ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="collection" className="block text-sm font-medium text-gray-700 mb-1">
+                        Kollekte
+                      </label>
+                      <input
+                        type="text"
+                        id="collection"
+                        value={collection}
+                        onChange={(e) => setCollection(e.target.value)}
+                        placeholder="Verantwortliche Person / Team"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center pt-2">
+                        <input
+                            id="communion"
+                            type="checkbox"
+                            checked={hasCommunion}
+                            onChange={(e) => setHasCommunion(e.target.checked)}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor="communion" className="ml-2 block text-sm font-medium text-gray-700">
+                            Abendmahl
+                        </label>
+                    </div>
+                </div>
             </div>
-            <div>
-              <label htmlFor="collection" className="block text-sm font-medium text-gray-700 mb-1">
-                Kollekte
-              </label>
-              <input
-                type="text"
-                id="collection"
-                value={collection}
-                onChange={(e) => setCollection(e.target.value)}
-                placeholder="Verantwortliche Person / Team"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label htmlFor="communion" className="block text-sm font-medium text-gray-700 mb-1">
-                Abendmahl
-              </label>
-              <input
-                type="text"
-                id="communion"
-                value={communion}
-                onChange={(e) => setCommunion(e.target.value)}
-                placeholder="Verantwortliche Person / Team"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+
             <div>
               <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
                 Notizen
