@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SermonPlan, SyncLog, View } from './types';
 import * as api from './services/api';
-import SermonPlanView from './components/SermonPlanView';
+import YearlyViewLayout from './components/YearlyViewLayout';
 import SyncLogView from './components/SyncLogView';
-import StatisticsView from './components/StatisticsView';
 import DashboardView from './components/DashboardView';
-import PeopleView from './components/PeopleView';
 import AssignSermonModal from './components/AssignSermonModal';
 import RecurringAssignmentModal from './components/RecurringAssignmentModal';
-import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, UsersIcon, HomeIcon } from './components/icons/Icons';
+import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, UsersIcon, HomeIcon, CalendarDaysIcon } from './components/icons/Icons';
 
+export type YearlyViewType = 'plan' | 'stats' | 'people';
 
 const App = () => {
   const [view, setView] = useState<View>(View.DASHBOARD);
@@ -21,6 +20,9 @@ const App = () => {
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [selectedSermon, setSelectedSermon] = useState<SermonPlan | null>(null);
   const [isDbSetupError, setIsDbSetupError] = useState(false);
+  
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [yearlyView, setYearlyView] = useState<YearlyViewType>('plan');
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -33,6 +35,9 @@ const App = () => {
       ]);
       setSermonPlans(plans);
       setSyncLogs(logs);
+      if (plans.length > 0 && !selectedYear) {
+        setSelectedYear(new Date().getFullYear());
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       if (errorMessage.includes('relation "sermon_plans" does not exist')) {
@@ -45,15 +50,25 @@ const App = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedYear]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const preachers = useMemo(() => {
+  const uniqueYears = useMemo(() => {
+    const years = new Set(sermonPlans.map(p => new Date(p.date).getFullYear()));
+    return Array.from(years).sort((a, b) => b - a);
+  }, [sermonPlans]);
+
+  const filteredSermonPlans = useMemo(() => {
+      if (!selectedYear) return [];
+      return sermonPlans.filter(plan => new Date(plan.date).getFullYear() === selectedYear);
+  }, [sermonPlans, selectedYear]);
+
+  const filteredPeople = useMemo(() => {
     const preacherMap = new Map<string, { name: string; count: number }>();
-    sermonPlans.forEach(plan => {
+    filteredSermonPlans.forEach(plan => {
         if (plan.preacher_name) {
             const name = plan.preacher_name;
             const existing = preacherMap.get(name);
@@ -65,7 +80,8 @@ const App = () => {
         }
     });
     return Array.from(preacherMap.values()).sort((a, b) => b.count - a.count);
-  }, [sermonPlans]);
+  }, [filteredSermonPlans]);
+
 
   const handleSyncEvents = async () => {
     setIsLoading(true);
@@ -235,15 +251,22 @@ const App = () => {
       }
   };
   
+  const handleYearSelect = (year: number) => {
+    setSelectedYear(year);
+    setView(View.YEARLY);
+    setYearlyView('plan');
+  };
+  
   const NavItem: React.FC<{
-    targetView: View;
+    onClick: () => void;
+    isActive: boolean;
     icon: React.ReactNode;
     label: string;
-  }> = ({ targetView, icon, label }) => (
+  }> = ({ onClick, isActive, icon, label }) => (
     <button
-      onClick={() => setView(targetView)}
-      className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-        view === targetView
+      onClick={onClick}
+      className={`flex items-center w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+        isActive
           ? 'bg-blue-600 text-white'
           : 'text-gray-600 hover:bg-gray-200'
       }`}
@@ -289,22 +312,25 @@ const App = () => {
                 setView={setView}
             />
         );
-      case View.SERMON_PLAN:
+      case View.YEARLY:
+        if (!selectedYear) {
+            return <div className="text-center p-8">Bitte wählen Sie ein Jahr aus der Navigation aus.</div>;
+        }
         return (
-          <SermonPlanView
-            sermonPlans={sermonPlans}
-            onAssign={handleOpenModal}
-            onRecurringAssign={handleOpenRecurringModal}
-            onSync={handleSyncEvents}
-            isLoading={isLoading}
-          />
+            <YearlyViewLayout
+                year={selectedYear}
+                activeView={yearlyView}
+                onViewChange={setYearlyView}
+                sermonPlans={filteredSermonPlans}
+                peopleData={filteredPeople}
+                onAssign={handleOpenModal}
+                onRecurringAssign={handleOpenRecurringModal}
+                onSync={handleSyncEvents}
+                isLoading={isLoading}
+            />
         );
       case View.SYNC_LOG:
         return <SyncLogView syncLogs={syncLogs} />;
-      case View.STATISTICS:
-        return <StatisticsView sermonPlans={sermonPlans} />;
-      case View.PEOPLE:
-        return <PeopleView people={preachers} />;
       default:
         return null;
     }
@@ -318,11 +344,23 @@ const App = () => {
           <p className="text-xs text-gray-500">ChurchTools Sync</p>
         </div>
         <nav className="flex-1 p-4 space-y-2">
-           <NavItem targetView={View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />
-           <NavItem targetView={View.SERMON_PLAN} icon={<DocumentTextIcon className="w-5 h-5" />} label="Predigtplan" />
-           <NavItem targetView={View.STATISTICS} icon={<ChartBarIcon className="w-5 h-5" />} label="Statistiken" />
-           <NavItem targetView={View.PEOPLE} icon={<UsersIcon className="w-5 h-5" />} label="Personen" />
-           <NavItem targetView={View.SYNC_LOG} icon={<SyncIcon className="w-5 h-5" />} label="Sync Protokoll" />
+           <NavItem onClick={() => setView(View.DASHBOARD)} isActive={view === View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />
+           <NavItem onClick={() => setView(View.SYNC_LOG)} isActive={view === View.SYNC_LOG} icon={<SyncIcon className="w-5 h-5" />} label="Sync Protokoll" />
+           
+           <div className="pt-4 mt-2 border-t">
+                <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Jahresübersicht</h3>
+                <div className="space-y-1">
+                    {uniqueYears.map(year => (
+                        <NavItem 
+                            key={year}
+                            onClick={() => handleYearSelect(year)}
+                            isActive={view === View.YEARLY && selectedYear === year}
+                            icon={<CalendarDaysIcon className="w-5 h-5" />}
+                            label={String(year)}
+                        />
+                    ))}
+                </div>
+           </div>
         </nav>
       </aside>
       <main className="flex-1 p-6 overflow-auto">

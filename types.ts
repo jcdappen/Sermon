@@ -39,8 +39,9 @@ export interface PreacherStat {
 
 export enum View {
   DASHBOARD,
-  SERMON_PLAN,
+  SERMON_PLAN, // Remains for potential future use, but YEARLY is now primary
   SYNC_LOG,
-  STATISTICS,
-  PEOPLE,
+  STATISTICS, // Remains for potential future use
+  PEOPLE, // Remains for potential future use
+  YEARLY,
 }

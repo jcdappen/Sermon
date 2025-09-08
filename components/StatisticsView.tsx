@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { SermonPlan, PreacherStat } from '../types';
 
@@ -8,18 +7,14 @@ interface StatisticsViewProps {
 
 const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
   const stats: PreacherStat[] = useMemo(() => {
-    const currentYear = new Date().getFullYear();
+    const sermonsWithPreacher = sermonPlans.filter(plan => plan.preacher_name);
 
-    const sermonsThisYear = sermonPlans.filter(plan =>
-      plan.preacher_name && new Date(plan.date).getFullYear() === currentYear
-    );
-
-    const totalSermons = sermonsThisYear.length;
+    const totalSermons = sermonsWithPreacher.length;
     if (totalSermons === 0) {
       return [];
     }
 
-    const preacherCounts = sermonsThisYear.reduce((acc, sermon) => {
+    const preacherCounts = sermonsWithPreacher.reduce((acc, sermon) => {
       const name = sermon.preacher_name!;
       acc[name] = (acc[name] || 0) + 1;
       return acc;
@@ -36,11 +31,11 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
   }, [sermonPlans]);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Prediger-Statistik (Aktuelles Jahr)</h2>
+    <>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Prediger-Statistik</h2>
 
       {stats.length === 0 ? (
-        <p className="text-gray-500">Für das aktuelle Jahr sind noch keine Predigten mit zugewiesenem Prediger vorhanden.</p>
+        <p className="text-gray-500">Für diesen Zeitraum sind noch keine Predigten mit zugewiesenem Prediger vorhanden.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -73,7 +68,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
           </table>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
