@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { SermonPlan } from '../types';
-import { SyncIcon, PencilIcon, CalendarDaysIcon } from './icons/Icons';
+import { SyncIcon, PencilIcon, CalendarDaysIcon, SunIcon } from './icons/Icons';
 
 interface SermonPlanViewProps {
   sermonPlans: SermonPlan[];
@@ -60,6 +60,40 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
     }).format(new Date(dateString));
   };
   
+  // Holiday data and function here to keep it self-contained
+  const holidaysBW = [
+      // 2024
+      { start: new Date('2024-03-23'), end: new Date('2024-04-05') }, // Ostern
+      { start: new Date('2024-05-21'), end: new Date('2024-05-31') }, // Pfingsten
+      { start: new Date('2024-07-25'), end: new Date('2024-09-07') }, // Sommer
+      { start: new Date('2024-10-28'), end: new Date('2024-10-31') }, // Herbst
+      { start: new Date('2024-12-23'), end: new Date('2025-01-04') }, // Weihnachten
+
+      // 2025
+      { start: new Date('2025-04-14'), end: new Date('2025-04-26') }, // Ostern
+      { start: new Date('2025-06-10'), end: new Date('2025-06-21') }, // Pfingsten
+      { start: new Date('2025-07-31'), end: new Date('2025-09-13') }, // Sommer
+      { start: new Date('2025-10-27'), end: new Date('2025-10-31') }, // Herbst
+      { start: new Date('2025-12-22'), end: new Date('2026-01-05') }, // Weihnachten
+  ];
+
+  holidaysBW.forEach(period => {
+      period.start.setHours(0, 0, 0, 0);
+      period.end.setHours(0, 0, 0, 0);
+  });
+
+  const isDateInBWHolidays = (dateString: string): boolean => {
+      const checkDate = new Date(dateString);
+      checkDate.setHours(0, 0, 0, 0);
+
+      for (const period of holidaysBW) {
+          if (checkDate >= period.start && checkDate <= period.end) {
+              return true;
+          }
+      }
+      return false;
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
       <div className="flex justify-between items-center mb-6 gap-2 flex-wrap">
@@ -102,7 +136,16 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
           <tbody>
             {sermonPlans.map((sermon) => (
               <tr key={sermon.id} className="border-b hover:bg-gray-50">
-                <td className="p-4 text-sm text-gray-800 whitespace-nowrap">{formatDate(sermon.date)}</td>
+                <td className="p-4 text-sm text-gray-800 whitespace-nowrap">
+                   <div className="flex items-center gap-2">
+                        <span>{formatDate(sermon.date)}</span>
+                        {isDateInBWHolidays(sermon.date) && (
+                            <span title="Liegt in den Schulferien (BW)">
+                                <SunIcon className="w-5 h-5 text-amber-500" />
+                            </span>
+                        )}
+                    </div>
+                </td>
                 <td className="p-4 text-sm text-gray-800">
                   <div>{sermon.title}</div>
                 </td>

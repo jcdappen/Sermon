@@ -1,5 +1,5 @@
 {
-  "name": "ChurchTools Sermon Planner",
+  "name": "Sermon Planner final",
   "description": "A web application to synchronize worship service schedules from ChurchTools, assign preachers, and write the assignments back. This provides a clear interface for managing sermon plans.",
   "requestFramePermissions": []
 }

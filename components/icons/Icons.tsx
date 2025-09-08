@@ -93,3 +93,9 @@ export const UsersIcon: React.FC<IconProps> = (props) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-2.308M15 19.128v-3.86a2.25 2.25 0 00-4.5 0v3.86m0 0a2.25 2.25 0 01-4.5 0v-3.86m-3.86 3.86a2.25 2.25 0 01-4.5 0v-3.86m7.5 0a2.25 2.25 0 00-4.5 0v3.86M3 13.5a2.25 2.25 0 012.25-2.25h1.5a2.25 2.25 0 012.25 2.25v3.86m-3.86-3.86a2.25 2.25 0 00-4.5 0v3.86" />
     </svg>
 );
+
+export const SunIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+    </svg>
+);
