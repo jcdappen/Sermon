@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { SermonPlan, SyncLog, View } from './types';
 import * as api from './services/api';
@@ -28,6 +29,7 @@ const App = () => {
     setIsLoading(true);
     setError(null);
     setIsDbSetupError(false);
+
     try {
       const [plans, logs] = await Promise.all([
         api.getSermonPlans(),
@@ -40,17 +42,21 @@ const App = () => {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      if (errorMessage.includes('relation "sermon_plans" does not exist')) {
-        setError('Die Datenbank ist noch nicht eingerichtet. Bitte führen Sie die Ersteinrichtung durch.');
+      // Generic error handling for database setup issues
+      if (errorMessage.includes('does not exist') || errorMessage.includes('column') || errorMessage.includes('relation')) {
+        setError('Die Datenbank ist noch nicht eingerichtet oder veraltet. Bitte führen Sie die Einrichtung durch.');
         setIsDbSetupError(true);
+        setIsLoading(false);
+        return;
       } else {
-        setError('Fehler beim Laden der Daten.');
+        setError('Fehler beim Laden der Plandaten.');
       }
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+      console.error("Error fetching sermon plans/logs:", err);
     }
+
+    setIsLoading(false);
   }, [selectedYear]);
+
 
   useEffect(() => {
     fetchData();
@@ -277,11 +283,13 @@ const App = () => {
   );
 
   const renderView = () => {
-    if (isLoading && !sermonPlans.length && !error) {
+    if (isLoading && !sermonPlans.length && !isDbSetupError) {
       return <div className="text-center p-8">Lade Daten...</div>;
     }
-    if (error) {
-      if (isDbSetupError) {
+    if (error && !isDbSetupError) {
+       return <div className="text-center p-8 text-red-500 whitespace-pre-wrap">{error}</div>;
+    }
+     if (isDbSetupError) {
         return (
           <div className="text-center p-8 bg-white rounded-lg shadow-lg">
             <WrenchScrewdriverIcon className="w-16 h-16 mx-auto text-yellow-500 mb-4" />
@@ -298,8 +306,7 @@ const App = () => {
           </div>
         );
       }
-      return <div className="text-center p-8 text-red-500">{error}</div>;
-    }
+    
 
     switch (view) {
       case View.DASHBOARD:
@@ -309,6 +316,12 @@ const App = () => {
                 syncLogs={syncLogs}
                 onSync={handleSyncEvents}
                 isLoading={isLoading}
+                onNavigateToPlan={() => {
+                    if (uniqueYears.length > 0) {
+                        // Navigate to the most recent year's plan
+                        handleYearSelect(uniqueYears[0]);
+                    }
+                }}
                 setView={setView}
             />
         );
@@ -341,7 +354,7 @@ const App = () => {
       <aside className="w-64 bg-white shadow-md flex flex-col">
         <div className="p-4 border-b">
           <h1 className="text-xl font-bold text-gray-800">Predigtplaner</h1>
-          <p className="text-xs text-gray-500">ChurchTools Sync</p>
+          <p className="text-xs text-gray-500">iCal Sync</p>
         </div>
         <nav className="flex-1 p-4 space-y-2">
            <NavItem onClick={() => setView(View.DASHBOARD)} isActive={view === View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />

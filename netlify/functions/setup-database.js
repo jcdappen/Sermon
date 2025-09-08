@@ -1,5 +1,3 @@
-
-
 const { Pool } = require('pg');
 
 exports.handler = async (event, context) => {
@@ -35,8 +33,7 @@ exports.handler = async (event, context) => {
   try {
     await client.query('BEGIN');
 
-    // Create sermon_plans table - this is the target schema.
-    // If the table exists, this command does nothing, but older versions might be missing columns.
+    // Create sermon_plans table
     await client.query(`
       CREATE TABLE IF NOT EXISTS sermon_plans (
         id SERIAL PRIMARY KEY,
@@ -71,29 +68,14 @@ exports.handler = async (event, context) => {
       );
     `);
     
-    // ** Migration Steps **
-    // Add preacher_category column if it doesn't exist
+    // ** Migration Steps using ADD COLUMN IF NOT EXISTS **
     await client.query(`
       ALTER TABLE sermon_plans
-      ADD COLUMN IF NOT EXISTS preacher_category VARCHAR(50);
+      ADD COLUMN IF NOT EXISTS preacher_category VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS family_time_topic VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS collection_purpose VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS communion_responsible VARCHAR(255);
     `);
-
-    // Check if the 'event_uid' column exists. If not, this is an older schema.
-    const columnCheck = await client.query(`
-      SELECT 1 FROM information_schema.columns 
-      WHERE table_name = 'sermon_plans' AND column_name = 'event_uid'
-    `);
-
-    if (columnCheck.rowCount === 0) {
-      console.log("Schema migration needed: 'event_uid' column is missing.");
-      // Add the column. It will be nullable for now.
-      await client.query(`ALTER TABLE sermon_plans ADD COLUMN event_uid VARCHAR(255);`);
-      
-      // Add a unique index. This is critical for the `ON CONFLICT` statement in sync-events.js.
-      // This will succeed because the new column is all NULLs.
-      await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS sermon_plans_event_uid_idx ON sermon_plans (event_uid);`);
-      console.log("Successfully added 'event_uid' column and unique index to 'sermon_plans'.");
-    }
 
     await client.query('COMMIT');
     

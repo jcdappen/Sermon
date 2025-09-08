@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { SermonPlan, SyncLog, View } from '../types';
 import { CalendarIcon, UserPlusIcon, UsersIcon, CheckCircleIcon, ExclamationCircleIcon, SyncIcon, DocumentTextIcon } from './icons/Icons';
@@ -8,6 +7,7 @@ interface DashboardViewProps {
   syncLogs: SyncLog[];
   onSync: () => void;
   isLoading: boolean;
+  onNavigateToPlan: () => void;
   setView: (view: View) => void;
 }
 
@@ -26,7 +26,7 @@ const StatCard: React.FC<{
   </div>
 );
 
-const DashboardView: React.FC<DashboardViewProps> = ({ sermonPlans, syncLogs, onSync, isLoading, setView }) => {
+const DashboardView: React.FC<DashboardViewProps> = ({ sermonPlans, syncLogs, onSync, isLoading, onNavigateToPlan, setView }) => {
 
   const formatDate = (dateString: string) => {
     return new Intl.DateTimeFormat('de-DE', {
@@ -160,7 +160,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sermonPlans, syncLogs, on
              <h3 className="text-lg font-semibold text-gray-800 mb-4">Schnellzugriff</h3>
              <div className="space-y-3">
                <button
-                  onClick={() => setView(View.SERMON_PLAN)}
+                  onClick={onNavigateToPlan}
                   className="w-full flex items-center justify-center px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
                 >
                   <DocumentTextIcon className="w-5 h-5 mr-2" />

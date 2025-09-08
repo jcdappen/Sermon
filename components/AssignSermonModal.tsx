@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { SermonPlan } from '../types';
 import { XMarkIcon } from './icons/Icons';
@@ -37,7 +35,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
   const [notes, setNotes] = useState(sermon.sermon_notes || '');
   const [familyTime, setFamilyTime] = useState(sermon.family_time_topic || '');
   const [collection, setCollection] = useState(sermon.collection_purpose || '');
-  const [hasCommunion, setHasCommunion] = useState(sermon.communion_responsible === 'Ja');
+  const [hasCommunion, setHasCommunion] = useState(!!sermon.communion_responsible);
 
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -77,7 +75,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                     id="preacher"
                     value={preacherName}
                     onChange={(e) => setPreacherName(e.target.value)}
-                    placeholder="Name des Predigers"
+                    placeholder="Namen eingeben"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

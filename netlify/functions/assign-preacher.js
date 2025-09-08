@@ -1,5 +1,3 @@
-
-
 const { Pool } = require('pg');
 
 exports.handler = async (event, context) => {
@@ -49,16 +47,7 @@ exports.handler = async (event, context) => {
       connectionString: process.env.NETLIFY_DATABASE_URL
     });
 
-    // Create a combined notes string for the local database to store all details
-    // in a single field, avoiding schema change requirements.
-    const combinedNotes = [
-        notes ? `Notizen: ${notes}` : null,
-        family_time ? `Familytime: ${family_time}` : null,
-        collection ? `Kollekte: ${collection}` : null,
-        communion ? `Abendmahl: ${communion}` : null
-    ].filter(Boolean).join(' | ');
-
-    // Update the local database.
+    // Update the local database with dedicated columns.
     await pool.query(`
       UPDATE sermon_plans 
       SET 
@@ -68,16 +57,22 @@ exports.handler = async (event, context) => {
         sermon_notes = $4,
         status = $5,
         preacher_category = $6,
+        family_time_topic = $7,
+        collection_purpose = $8,
+        communion_responsible = $9,
         sync_status = 'pending',
         updated_at = NOW()
-      WHERE event_uid = $7
+      WHERE event_uid = $10
     `, [
-      preacherName,
-      series,
-      topic,
-      combinedNotes,
+      preacherName || null,
+      series || null,
+      topic || null,
+      notes || null,
       status,
-      preacherCategory,
+      preacherCategory || null,
+      family_time || null,
+      collection || null,
+      communion || null,
       eventUid
     ]);
 
