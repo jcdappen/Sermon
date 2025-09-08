@@ -35,9 +35,10 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
     return calculatedStats.sort((a, b) => b.count - a.count);
   }, [sermonPlans]);
 
-  const categoryStats: CountStat[] = useMemo(() => {
+  const categoryStats: PreacherStat[] = useMemo(() => {
     const sermonsWithCategory = sermonPlans.filter(plan => plan.preacher_category);
-    if (sermonsWithCategory.length === 0) return [];
+    const totalWithCategory = sermonsWithCategory.length;
+    if (totalWithCategory === 0) return [];
 
     const categoryCounts = sermonsWithCategory.reduce((acc, sermon) => {
       const category = sermon.preacher_category!;
@@ -46,7 +47,11 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
     }, {} as Record<string, number>);
 
     return Object.entries(categoryCounts)
-      .map(([name, count]) => ({ name, count }))
+      .map(([name, count]) => ({
+        name,
+        count,
+        percentage: (count / totalWithCategory) * 100,
+      }))
       .sort((a, b) => b.count - a.count);
   }, [sermonPlans]);
 
@@ -134,7 +139,43 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
         )}
       </div>
 
-      <StatTable title="Kategorie-Statistik" data={categoryStats} col1Header="Kategorie" />
+      <div className="mt-12">
+        <h3 className="text-xl font-bold text-gray-800 mb-6">Kategorie-Statistik</h3>
+        {categoryStats.length === 0 ? (
+          <p className="text-gray-500">Für diesen Zeitraum sind keine Daten vorhanden.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="p-4 text-sm font-semibold text-gray-600">Kategorie</th>
+                  <th className="p-4 text-sm font-semibold text-gray-600 text-center">Anzahl</th>
+                  <th className="p-4 text-sm font-semibold text-gray-600">Anteil</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoryStats.map((stat) => (
+                  <tr key={stat.name} className="border-b hover:bg-gray-50">
+                    <td className="p-4 text-sm text-gray-800 font-medium">{stat.name}</td>
+                    <td className="p-4 text-sm text-gray-800 text-center">{stat.count}</td>
+                    <td className="p-4 text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-4 mr-4">
+                          <div
+                            className="bg-sky-600 h-4 rounded-full"
+                            style={{ width: `${stat.percentage}%` }}
+                          ></div>
+                        </div>
+                        <span className="font-semibold text-gray-700 w-16 text-right">{stat.percentage.toFixed(1)}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
       
       <StatTable title="Kollekten-Statistik" data={collectionStats} col1Header="Kollekte für" />
 
