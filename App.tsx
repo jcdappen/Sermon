@@ -180,13 +180,19 @@ const App = () => {
       familyTime: string;
   }) => {
       const { startDate, endDate, pattern } = details;
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+      
+      // Helper to parse YYYY-MM-DD string as a Date object at midnight in the local timezone.
+      // This avoids timezone issues where new Date('YYYY-MM-DD') is treated as UTC midnight.
+      const parseDateAsLocal = (dateString: string) => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      };
+
+      const start = parseDateAsLocal(startDate);
+      const end = parseDateAsLocal(endDate);
       
       const sermonsToUpdate = sermonPlans.filter(sermon => {
-         const sermonDate = new Date(sermon.date);
-         // Timezone offset correction
-         sermonDate.setMinutes(sermonDate.getMinutes() + sermonDate.getTimezoneOffset());
+         const sermonDate = parseDateAsLocal(sermon.date);
 
          if (sermonDate < start || sermonDate > end) return false;
          
@@ -199,10 +205,16 @@ const App = () => {
          switch(pattern) {
              case 'every-week': return true;
              case 'every-2-weeks': {
-                const diffTime = Math.abs(sermonDate.getTime() - start.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const diffWeeks = Math.floor(diffDays / 7);
-                return diffWeeks % 2 === 0;
+                // Use UTC to calculate day difference to avoid DST issues.
+                const startDay = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+                const sermonDay = Date.UTC(sermonDate.getFullYear(), sermonDate.getMonth(), sermonDate.getDate());
+                
+                const dayDiff = (sermonDay - startDay) / (1000 * 60 * 60 * 24);
+
+                if (dayDiff < 0) return false;
+                
+                const weekDiff = Math.floor(dayDiff / 7);
+                return weekDiff % 2 === 0;
              }
              case 'first-sunday': return weekOfMonth === 1;
              case 'second-sunday': return weekOfMonth === 2;
