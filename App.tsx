@@ -154,6 +154,7 @@ const App = () => {
     if (!selectedSermon) return;
 
     setIsLoading(true);
+    setError(null);
     try {
       await api.assignPreacher(
         selectedSermon.event_uid,
@@ -162,7 +163,14 @@ const App = () => {
       await fetchData(); // Refresh data to show changes
       handleCloseModal();
     } catch (err) {
-      setError('Fehler beim Zuweisen des Predigers.');
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
+        setError('Die Datenbank-Struktur ist veraltet. Bitte führen Sie die Einrichtung erneut durch, um sie zu aktualisieren.');
+        setIsDbSetupError(true);
+        handleCloseModal();
+      } else {
+        setError('Fehler beim Zuweisen des Predigers.');
+      }
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -181,8 +189,6 @@ const App = () => {
   }) => {
       const { startDate, endDate, pattern } = details;
       
-      // Helper to parse YYYY-MM-DD string as a Date object at midnight in the local timezone.
-      // This avoids timezone issues where new Date('YYYY-MM-DD') is treated as UTC midnight.
       const parseDateAsLocal = (dateString: string) => {
         const [year, month, day] = dateString.split('-').map(Number);
         return new Date(year, month - 1, day);
@@ -196,8 +202,8 @@ const App = () => {
 
          if (sermonDate < start || sermonDate > end) return false;
          
-         const dayOfWeek = sermonDate.getDay(); // 0 = Sunday, 1 = Monday...
-         if(dayOfWeek !== 0) return false; // Only consider Sundays for now
+         const dayOfWeek = sermonDate.getDay();
+         if(dayOfWeek !== 0) return false;
          
          const date = sermonDate.getDate();
          const weekOfMonth = Math.ceil(date / 7);
@@ -205,7 +211,6 @@ const App = () => {
          switch(pattern) {
              case 'every-week': return true;
              case 'every-2-weeks': {
-                // Use UTC to calculate day difference to avoid DST issues.
                 const startDay = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
                 const sermonDay = Date.UTC(sermonDate.getFullYear(), sermonDate.getMonth(), sermonDate.getDate());
                 
@@ -240,21 +245,19 @@ const App = () => {
       if(!confirmed) return;
       
       setIsLoading(true);
+      setError(null);
       try {
           for(const sermon of sermonsToUpdate) {
-             // If a field in the modal is filled, use its value.
-             // If it's empty, use its empty value (to clear existing data).
-             // For fields NOT in the modal (notes, communion), preserve the original data.
              const isAssigningPreacher = details.preacherName.trim() !== '';
 
              await api.assignPreacher(sermon.event_uid, {
                  preacherName: details.preacherName,
                  series: details.series,
                  topic: details.topic,
-                 notes: sermon.sermon_notes || '', // Preserve notes
+                 notes: sermon.sermon_notes || '',
                  family_time: details.familyTime,
                  collection: details.collection,
-                 communion: sermon.communion_responsible || '', // Preserve communion
+                 communion: sermon.communion_responsible || '',
                  status: isAssigningPreacher ? 'assigned' : sermon.status,
                  preacherCategory: isAssigningPreacher ? 'Gemeinde' : (sermon.preacher_category || ''),
              });
@@ -262,7 +265,14 @@ const App = () => {
           await fetchData();
           handleCloseModal();
       } catch (err) {
-          setError('Fehler bei der Serienzuweisung.');
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          if (errorMessage.includes('column') && errorMessage.includes('does not exist')) {
+            setError('Die Datenbank-Struktur ist veraltet. Bitte führen Sie die Einrichtung erneut durch, um sie zu aktualisieren.');
+            setIsDbSetupError(true);
+            handleCloseModal();
+          } else {
+            setError('Fehler bei der Serienzuweisung.');
+          }
           console.error(err);
       } finally {
           setIsLoading(false);
@@ -330,7 +340,6 @@ const App = () => {
                 isLoading={isLoading}
                 onNavigateToPlan={() => {
                     if (uniqueYears.length > 0) {
-                        // Navigate to the most recent year's plan
                         handleYearSelect(uniqueYears[0]);
                     }
                 }}
