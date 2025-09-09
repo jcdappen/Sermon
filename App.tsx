@@ -186,6 +186,7 @@ const App = () => {
       pattern: string;
       collection: string;
       familyTime: string;
+      communion: string;
   }) => {
       const { startDate, endDate, pattern } = details;
       
@@ -239,7 +240,7 @@ const App = () => {
           return;
       }
       
-      const confirmationMessage = `Wollen Sie wirklich ${sermonsToUpdate.length} Gottesdienste aktualisieren? Leere Felder in diesem Formular überschreiben bestehende Werte (z.B. wird ein leerer Predigername bestehende Zuweisungen entfernen).`;
+      const confirmationMessage = `Wollen Sie wirklich ${sermonsToUpdate.length} Gottesdienste aktualisieren? Leere Felder in diesem Formular überschreiben bestehende Werte (z.B. Prediger, Thema, Kollekte, Abendmahl).`;
 
       const confirmed = confirm(confirmationMessage);
       if(!confirmed) return;
@@ -257,7 +258,7 @@ const App = () => {
                  notes: sermon.sermon_notes || '',
                  family_time: details.familyTime,
                  collection: details.collection,
-                 communion: sermon.communion_responsible || '',
+                 communion: details.communion,
                  status: isAssigningPreacher ? 'assigned' : sermon.status,
                  preacherCategory: isAssigningPreacher ? 'Gemeinde' : (sermon.preacher_category || ''),
              });

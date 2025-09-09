@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { XMarkIcon } from './icons/Icons';
 
@@ -12,6 +13,7 @@ interface RecurringAssignmentModalProps {
     pattern: string;
     collection: string;
     familyTime: string;
+    communion: string;
   }) => void;
 }
 
@@ -24,6 +26,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
   const [topic, setTopic] = useState('');
   const [collection, setCollection] = useState('');
   const [familyTime, setFamilyTime] = useState('');
+  const [communion, setCommunion] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(() => {
     const date = new Date();
@@ -35,11 +38,11 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const hasData = [preacherName, series, topic, collection, familyTime]
+    const hasData = [preacherName, series, topic, collection, familyTime, communion]
         .some(field => field.trim() !== '');
 
     if (!hasData) {
-        alert('Bitte füllen Sie mindestens ein Zuweisungsfeld aus (Prediger, Serie, Thema, Kollekte oder Familytime).');
+        alert('Bitte füllen Sie mindestens ein Zuweisungsfeld aus (Prediger, Serie, Thema, Kollekte, Familytime oder Abendmahl).');
         return;
     }
     
@@ -56,6 +59,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
       pattern,
       collection,
       familyTime,
+      communion,
     });
   };
 
@@ -133,6 +137,19 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                 value={collection}
                 onChange={(e) => setCollection(e.target.value)}
                 placeholder="Zweck der Kollekte"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+             <div>
+              <label htmlFor="communion" className="block text-sm font-medium text-gray-700 mb-1">
+                Abendmahl (Verantwortlich)
+              </label>
+              <input
+                type="text"
+                id="communion"
+                value={communion}
+                onChange={(e) => setCommunion(e.target.value)}
+                placeholder="Name der verantwortlichen Person"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
