@@ -17,6 +17,15 @@ interface RecurringAssignmentModalProps {
   }) => void;
 }
 
+// Helper to get local date string in YYYY-MM-DD format, avoiding timezone issues.
+const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+
 const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
   onClose,
   onSave,
@@ -27,11 +36,11 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
   const [collection, setCollection] = useState('');
   const [familyTime, setFamilyTime] = useState('');
   const [communion, setCommunion] = useState('');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(getLocalDateString(new Date()));
   const [endDate, setEndDate] = useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() + 3);
-    return date.toISOString().split('T')[0];
+    return getLocalDateString(date);
   });
   const [pattern, setPattern] = useState('every-week');
 
