@@ -179,6 +179,7 @@ const App = () => {
   
   const handleSaveRecurringAssignment = async (details: {
       preacherName: string;
+      preacherCategory: string;
       series: string;
       topic: string;
       startDate: string;
@@ -266,7 +267,7 @@ const App = () => {
                  collection: details.collection,
                  communion: details.communion,
                  status: isAssigningPreacher ? 'assigned' : sermon.status,
-                 preacherCategory: isAssigningPreacher ? 'Gemeinde' : (sermon.preacher_category || ''),
+                 preacherCategory: isAssigningPreacher ? details.preacherCategory : '',
              });
           }
           await fetchData();

@@ -6,6 +6,7 @@ interface RecurringAssignmentModalProps {
   onClose: () => void;
   onSave: (details: {
     preacherName: string;
+    preacherCategory: string;
     series: string;
     topic: string;
     startDate: string;
@@ -25,12 +26,15 @@ const getLocalDateString = (date: Date): string => {
     return `${year}-${month}-${day}`;
 };
 
+const PREACHER_CATEGORIES = ['Gemeinde', 'Gemeinderat', 'Gast', 'Leitender Pastor'];
+
 
 const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
   onClose,
   onSave,
 }) => {
   const [preacherName, setPreacherName] = useState('');
+  const [preacherCategory, setPreacherCategory] = useState('Gemeinde');
   const [series, setSeries] = useState('');
   const [topic, setTopic] = useState('');
   const [collection, setCollection] = useState('');
@@ -61,6 +65,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
     }
     onSave({
       preacherName,
+      preacherCategory,
       series,
       topic,
       startDate,
@@ -84,18 +89,34 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             {/* General Details */}
-            <div>
-              <label htmlFor="preacher" className="block text-sm font-medium text-gray-700 mb-1">
-                Prediger (optional)
-              </label>
-              <input
-                type="text"
-                id="preacher"
-                value={preacherName}
-                onChange={(e) => setPreacherName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Name des Predigers"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="preacher" className="block text-sm font-medium text-gray-700 mb-1">
+                    Prediger (optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="preacher"
+                    value={preacherName}
+                    onChange={(e) => setPreacherName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Name des Predigers"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                    Kategorie
+                  </label>
+                  <select
+                    id="category"
+                    value={preacherCategory}
+                    onChange={(e) => setPreacherCategory(e.target.value)}
+                    disabled={!preacherName.trim()}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    {PREACHER_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
             </div>
             <div>
               <label htmlFor="series" className="block text-sm font-medium text-gray-700 mb-1">
