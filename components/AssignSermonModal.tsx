@@ -35,7 +35,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
   const [notes, setNotes] = useState(sermon.sermon_notes || '');
   const [familyTime, setFamilyTime] = useState(sermon.family_time_topic || '');
   const [collection, setCollection] = useState(sermon.collection_purpose || '');
-  const [hasCommunion, setHasCommunion] = useState(!!sermon.communion_responsible);
+  const [communion, setCommunion] = useState(sermon.communion_responsible || '');
 
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -48,7 +48,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
       notes,
       family_time: familyTime,
       collection,
-      communion: hasCommunion ? 'Ja' : '',
+      communion: communion,
       status,
       preacherCategory,
     });
@@ -163,17 +163,18 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
-                    <div className="flex items-center pt-2">
-                        <input
-                            id="communion"
-                            type="checkbox"
-                            checked={hasCommunion}
-                            onChange={(e) => setHasCommunion(e.target.checked)}
-                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <label htmlFor="communion" className="ml-2 block text-sm font-medium text-gray-700">
-                            Abendmahl
-                        </label>
+                    <div>
+                      <label htmlFor="communion" className="block text-sm font-medium text-gray-700 mb-1">
+                        Abendmahl (Verantwortlich)
+                      </label>
+                      <input
+                        type="text"
+                        id="communion"
+                        value={communion}
+                        onChange={(e) => setCommunion(e.target.value)}
+                        placeholder="Name der verantwortlichen Person"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
                     </div>
                 </div>
             </div>
