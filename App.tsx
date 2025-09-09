@@ -191,7 +191,9 @@ const App = () => {
       const { startDate, endDate, pattern } = details;
       
       const parseDateAsLocal = (dateString: string) => {
-        const [year, month, day] = dateString.split('-').map(Number);
+        // Removes time/timezone info (e.g., 'T00:00:00.000Z') to ensure correct local date parsing
+        const datePart = dateString.split('T')[0];
+        const [year, month, day] = datePart.split('-').map(Number);
         return new Date(year, month - 1, day);
       };
 
@@ -204,10 +206,12 @@ const App = () => {
          if (sermonDate < start || sermonDate > end) return false;
          
          const dayOfWeek = sermonDate.getDay();
-         if(dayOfWeek !== 0) return false;
+         if(dayOfWeek !== 0) return false; // Only consider Sundays
          
          const date = sermonDate.getDate();
-         const weekOfMonth = Math.ceil(date / 7);
+         // This is a robust way to determine the Nth occurrence of a weekday in a month.
+         // e.g., dates 1-7 are the 1st occurrence, 8-14 are the 2nd, etc.
+         const occurrenceInMonth = Math.floor((date - 1) / 7) + 1;
 
          switch(pattern) {
              case 'every-week': return true;
@@ -222,10 +226,10 @@ const App = () => {
                 const weekDiff = Math.floor(dayDiff / 7);
                 return weekDiff % 2 === 0;
              }
-             case 'first-sunday': return weekOfMonth === 1;
-             case 'second-sunday': return weekOfMonth === 2;
-             case 'third-sunday': return weekOfMonth === 3;
-             case 'fourth-sunday': return weekOfMonth === 4;
+             case 'first-sunday': return occurrenceInMonth === 1;
+             case 'second-sunday': return occurrenceInMonth === 2;
+             case 'third-sunday': return occurrenceInMonth === 3;
+             case 'fourth-sunday': return occurrenceInMonth === 4;
              case 'last-sunday': {
                 const nextSunday = new Date(sermonDate);
                 nextSunday.setDate(date + 7);
