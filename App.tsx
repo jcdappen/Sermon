@@ -191,10 +191,12 @@ const App = () => {
       const { startDate, endDate, pattern } = details;
       
       const parseDateAsLocal = (dateString: string) => {
-        // Removes time/timezone info (e.g., 'T00:00:00.000Z') to ensure correct local date parsing
+        // Strips time/timezone info and appends a fixed local time to avoid UTC conversion.
+        // '2024-10-27T00:00:00.000Z' becomes '2024-10-27'
         const datePart = dateString.split('T')[0];
-        const [year, month, day] = datePart.split('-').map(Number);
-        return new Date(year, month - 1, day);
+        // '2024-10-27T12:00:00' ensures it's parsed as local time near midday,
+        // avoiding edge cases with DST changes at midnight.
+        return new Date(`${datePart}T12:00:00`);
       };
 
       const start = parseDateAsLocal(startDate);
