@@ -153,12 +153,18 @@ const App = () => {
   }) => {
     if (!selectedSermon) return;
 
+    const finalDetails = { ...details };
+    // If preacher name is cleared, also clear the category to prevent orphaned data.
+    if (finalDetails.preacherName.trim() === '') {
+        finalDetails.preacherCategory = '';
+    }
+
     setIsLoading(true);
     setError(null);
     try {
       await api.assignPreacher(
         selectedSermon.event_uid,
-        details
+        finalDetails
       );
       await fetchData(); // Refresh data to show changes
       handleCloseModal();

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { SermonPlan } from '../types';
 import { XMarkIcon } from './icons/Icons';
@@ -87,7 +88,8 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                     id="category"
                     value={preacherCategory}
                     onChange={(e) => setPreacherCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    disabled={!preacherName.trim()}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     {PREACHER_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
