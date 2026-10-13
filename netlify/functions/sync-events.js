@@ -51,7 +51,7 @@ async function syncEvent(db, event, serviceId) {
       event.id, es?.id ?? null,
       ctPreacher.name, ctPreacher.personId, statusFromPreacher(ctPreacher),
       es ? 'synced' : 'error',
-      es ? null : 'Kein Dienst "Prediger" im ChurchTools-Event.',
+      es ? null : 'Kein Dienst "Predigt" im ChurchTools-Event.',
     ]);
     return es ? 'pulled' : 'error';
   }
@@ -67,7 +67,7 @@ async function syncEvent(db, event, serviceId) {
   `, [toBerlinDate(start), title, start.toISOString(), end.toISOString(), event.id, es?.id ?? null, row.id]);
 
   if (!es) {
-    await markSyncError(db, row.id, 'Kein Dienst "Prediger" im ChurchTools-Event.');
+    await markSyncError(db, row.id, 'Kein Dienst "Predigt" im ChurchTools-Event.');
     return 'error';
   }
 

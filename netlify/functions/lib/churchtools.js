@@ -12,7 +12,9 @@ const BASE_URL = (process.env.CT_BASE_URL || process.env.CHURCHTOOLS_BASE_URL ||
 const API_BASE = `${BASE_URL}/api`;
 
 const CALENDAR_NAME = process.env.CT_CALENDAR_NAME || 'Gottesdienst';
-const PREACHER_SERVICE_NAME = process.env.CT_PREACHER_SERVICE_NAME || 'Prediger';
+const PREACHER_SERVICE_NAME = process.env.CT_PREACHER_SERVICE_NAME || 'Predigt';
+// Dienstgruppe "Predigt" (ID 6) – grenzt die Suche nach dem Dienst ein.
+const PREACHER_SERVICE_GROUP_ID = parseInt(process.env.CT_PREACHER_SERVICE_GROUP_ID || '6', 10);
 
 const TOKEN_MISSING_MESSAGE = 'Missing required environment variables: CHURCHTOOLS_API_TOKEN';
 
@@ -93,7 +95,7 @@ function findByName(items, name, label, envVar, stems = []) {
   throw new Error(`${label} "${name}" wurde in ChurchTools nicht gefunden. Vorhanden: ${available}. Bitte die richtige ID in Netlify als ${envVar} setzen.`);
 }
 
-// Ermittelt Kalender-ID (Gottesdienst) und Dienst-ID (Prediger) per Name,
+// Ermittelt Kalender-ID (Gottesdienst) und Dienst-ID (Predigt) per Name,
 // sofern sie nicht per CT_CALENDAR_ID / CT_PREACHER_SERVICE_ID gesetzt sind.
 async function resolveIds() {
   let calendarId = parseInt(process.env.CT_CALENDAR_ID, 10);
@@ -105,7 +107,9 @@ async function resolveIds() {
   }
   if (isNaN(serviceId)) {
     const res = await apiGet('/services');
-    serviceId = findByName(res?.data ?? [], PREACHER_SERVICE_NAME, 'Dienst', 'CT_PREACHER_SERVICE_ID', ['predig']);
+    const all = res?.data ?? [];
+    const inGroup = all.filter(svc => svc.serviceGroupId === PREACHER_SERVICE_GROUP_ID);
+    serviceId = findByName(inGroup.length ? inGroup : all, PREACHER_SERVICE_NAME, 'Dienst', 'CT_PREACHER_SERVICE_ID', ['predig']);
   }
   return { calendarId, serviceId };
 }
@@ -130,7 +134,7 @@ async function getEvent(eventId) {
   return res?.data ?? res;
 }
 
-// Liefert den ersten Dienst "Prediger" eines Events (oder null).
+// Liefert den ersten Dienst "Predigt" eines Events (oder null).
 function findPreacherService(event, serviceId) {
   const services = event.eventServices ?? [];
   const matching = services.filter(s => s.serviceId === serviceId);
