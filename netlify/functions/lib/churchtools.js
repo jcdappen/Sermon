@@ -97,9 +97,11 @@ function findByName(items, name, label, envVar, stems = []) {
 
 // Ermittelt Kalender-ID (Gottesdienst) und Dienst-ID (Predigt) per Name,
 // sofern sie nicht per CT_CALENDAR_ID / CT_PREACHER_SERVICE_ID gesetzt sind.
+// Der Dienst "Predigt" hat in ChurchTools die ID 1 (Standard);
+// CT_PREACHER_SERVICE_ID=auto schaltet auf die Suche per Name um.
 async function resolveIds() {
   let calendarId = parseInt(process.env.CT_CALENDAR_ID, 10);
-  let serviceId = parseInt(process.env.CT_PREACHER_SERVICE_ID, 10);
+  let serviceId = parseInt(process.env.CT_PREACHER_SERVICE_ID || '1', 10);
 
   if (isNaN(calendarId)) {
     const res = await apiGet('/calendars');

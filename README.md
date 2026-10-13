@@ -21,7 +21,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/1tD2dBWz1LSWlvVWiO5mQry
 
 ## ChurchTools-Sync (Gottesdienst ⇄ Dienst „Predigt“)
 
-Der Predigtplaner lädt die Gottesdienste direkt über die ChurchTools-API (gleiches Muster wie im Gruppenmodul) und gleicht den Dienst **„Predigt“** (Dienstgruppe 6) in beide Richtungen ab.
+Der Predigtplaner lädt die Gottesdienste direkt über die ChurchTools-API (gleiches Muster wie im Gruppenmodul) und gleicht den Dienst **„Predigt“** (Dienst-ID 1, Dienstgruppe 6) in beide Richtungen ab.
 
 ### Umgebungsvariablen (Netlify → Site configuration → Environment variables)
 
@@ -31,8 +31,8 @@ Der Predigtplaner lädt die Gottesdienste direkt über die ChurchTools-API (glei
 | `CHURCHTOOLS_API_TOKEN` | ja | Login-Token eines ChurchTools-Benutzers (Header `Authorization: Login …`). Alternativ wird `CHURCHTOOLS_TOKEN` akzeptiert. |
 | `CHURCHTOOLS_BASE_URL` (oder `CT_BASE_URL`) | nein | Standard: `https://gemeindekonkordia.church.tools` (mit oder ohne `/api`) |
 | `CT_CALENDAR_ID` / `CT_CALENDAR_NAME` | nein | Kalender der Gottesdienste; Standard: Suche nach Name „Gottesdienst“ |
-| `CT_PREACHER_SERVICE_ID` / `CT_PREACHER_SERVICE_NAME` | nein | Dienst des Predigers; Standard: Suche nach Name „Predigt“ |
-| `CT_PREACHER_SERVICE_GROUP_ID` | nein | Dienstgruppe, in der der Dienst gesucht wird; Standard: `6` („Predigt“) |
+| `CT_PREACHER_SERVICE_ID` | nein | ID des Dienstes „Predigt“; Standard: `1`. Mit `auto` wird per Name gesucht. |
+| `CT_PREACHER_SERVICE_NAME` / `CT_PREACHER_SERVICE_GROUP_ID` | nein | Nur bei `auto`: Dienstname (Standard „Predigt“) und Dienstgruppe (Standard `6`) |
 | `CT_SYNC_MONTHS` | nein | Wie viele Monate im Voraus synchronisiert werden (Standard: 12, plus 30 Tage rückwirkend) |
 | `CT_SERVICE_WRITE_MODE` | nein | `auto` (Standard: REST, bei 404/405 Legacy-AJAX `updateEventService`), `rest` oder `ajax` |
 
