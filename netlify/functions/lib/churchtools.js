@@ -70,14 +70,27 @@ async function getAllPages(endpoint, params = {}) {
   return results;
 }
 
-function findByName(items, name, label) {
-  const wanted = name.trim().toLowerCase();
-  const matches = items.filter(i => String(i.name ?? '').trim().toLowerCase() === wanted);
-  if (matches.length === 1) return matches[0].id;
-  if (matches.length === 0) {
-    throw new Error(`${label} "${name}" wurde in ChurchTools nicht gefunden.`);
+// Sucht per Name: zuerst exakt, dann "enthält" (z. B. "Predigt" für "Prediger"
+// über den Wortstamm). Bei Fehlschlag werden die vorhandenen Namen mit ID genannt,
+// damit die passende ID per Umgebungsvariable gesetzt werden kann.
+function findByName(items, name, label, envVar, stems = []) {
+  const norm = v => String(v ?? '').trim().toLowerCase();
+  const wanted = norm(name);
+  const candidates = [
+    i => norm(i.name) === wanted,
+    i => norm(i.name).includes(wanted),
+    ...stems.map(stem => i => norm(i.name).includes(stem)),
+  ];
+  for (const test of candidates) {
+    const matches = items.filter(test);
+    if (matches.length === 1) return matches[0].id;
+    if (matches.length > 1) {
+      const list = matches.map(m => `"${m.name}" (ID ${m.id})`).join(', ');
+      throw new Error(`${label} "${name}" ist in ChurchTools nicht eindeutig: ${list}. Bitte die richtige ID in Netlify als ${envVar} setzen.`);
+    }
   }
-  throw new Error(`${label} "${name}" ist in ChurchTools nicht eindeutig (IDs: ${matches.map(m => m.id).join(', ')}). Bitte die ID per Umgebungsvariable setzen.`);
+  const available = items.map(i => `"${i.name}" (ID ${i.id})`).join(', ') || '(keine sichtbar – Rechte des Token-Benutzers prüfen)';
+  throw new Error(`${label} "${name}" wurde in ChurchTools nicht gefunden. Vorhanden: ${available}. Bitte die richtige ID in Netlify als ${envVar} setzen.`);
 }
 
 // Ermittelt Kalender-ID (Gottesdienst) und Dienst-ID (Prediger) per Name,
@@ -88,11 +101,11 @@ async function resolveIds() {
 
   if (isNaN(calendarId)) {
     const res = await apiGet('/calendars');
-    calendarId = findByName(res?.data ?? [], CALENDAR_NAME, 'Kalender');
+    calendarId = findByName(res?.data ?? [], CALENDAR_NAME, 'Kalender', 'CT_CALENDAR_ID');
   }
   if (isNaN(serviceId)) {
     const res = await apiGet('/services');
-    serviceId = findByName(res?.data ?? [], PREACHER_SERVICE_NAME, 'Dienst');
+    serviceId = findByName(res?.data ?? [], PREACHER_SERVICE_NAME, 'Dienst', 'CT_PREACHER_SERVICE_ID', ['predig']);
   }
   return { calendarId, serviceId };
 }
