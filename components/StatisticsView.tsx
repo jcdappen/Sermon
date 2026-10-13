@@ -72,7 +72,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
 
   const StatTable: React.FC<{ title: string; data: CountStat[]; col1Header: string }> = ({ title, data, col1Header }) => (
      <div className="mt-12">
-        <h3 className="text-xl font-bold text-gray-800 mb-6">{title}</h3>
+        <h3 className="text-xl text-gray-800 mb-6">{title}</h3>
         {data.length === 0 ? (
           <p className="text-gray-500">Für diesen Zeitraum sind keine Daten vorhanden.</p>
         ) : (
@@ -102,7 +102,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
   return (
     <>
       <div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Prediger-Statistik</h2>
+        <h2 className="text-3xl text-brand mb-6">Prediger-Statistik</h2>
         {preacherStats.length === 0 ? (
           <p className="text-gray-500">Für diesen Zeitraum sind noch keine Predigten mit zugewiesenem Prediger vorhanden.</p>
         ) : (
@@ -122,9 +122,9 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
                     <td className="p-4 text-sm text-gray-800 text-center">{stat.count}</td>
                     <td className="p-4 text-sm text-gray-500">
                       <div className="flex items-center">
-                        <div className="w-full bg-gray-200 rounded-full h-4 mr-4">
+                        <div className="w-full bg-kk-grey-light h-4 mr-4">
                           <div
-                            className="bg-blue-600 h-4 rounded-full"
+                            className="bg-brand h-4"
                             style={{ width: `${stat.percentage}%` }}
                           ></div>
                         </div>
@@ -140,7 +140,7 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
       </div>
 
       <div className="mt-12">
-        <h3 className="text-xl font-bold text-gray-800 mb-6">Kategorie-Statistik</h3>
+        <h3 className="text-xl text-gray-800 mb-6">Kategorie-Statistik</h3>
         {categoryStats.length === 0 ? (
           <p className="text-gray-500">Für diesen Zeitraum sind keine Daten vorhanden.</p>
         ) : (
@@ -160,9 +160,9 @@ const StatisticsView: React.FC<StatisticsViewProps> = ({ sermonPlans }) => {
                     <td className="p-4 text-sm text-gray-800 text-center">{stat.count}</td>
                     <td className="p-4 text-sm text-gray-500">
                       <div className="flex items-center">
-                        <div className="w-full bg-gray-200 rounded-full h-4 mr-4">
+                        <div className="w-full bg-kk-grey-light h-4 mr-4">
                           <div
-                            className="bg-sky-600 h-4 rounded-full"
+                            className="bg-kk-teal-dark h-4"
                             style={{ width: `${stat.percentage}%` }}
                           ></div>
                         </div>

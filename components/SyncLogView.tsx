@@ -18,7 +18,7 @@ const SyncLogView: React.FC<SyncLogViewProps> = ({ syncLogs }) => {
     
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Synchronisationsprotokoll</h2>
+      <h2 className="text-3xl text-brand mb-6">Synchronisationsprotokoll</h2>
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead className="bg-gray-50 border-b">
@@ -37,12 +37,12 @@ const SyncLogView: React.FC<SyncLogViewProps> = ({ syncLogs }) => {
                 <td className="p-4 text-sm text-gray-800">{log.sync_type}</td>
                 <td className="p-4 text-sm">
                   {log.status === 'success' ? (
-                     <span className="flex items-center text-green-600">
+                     <span className="flex items-center text-kk-olive">
                         <CheckCircleIcon className="w-5 h-5 mr-2" />
                         Erfolgreich
                     </span>
                   ) : (
-                    <span className="flex items-center text-red-600">
+                    <span className="flex items-center text-brand-dark">
                         <ExclamationCircleIcon className="w-5 h-5 mr-2" />
                         Fehler
                     </span>

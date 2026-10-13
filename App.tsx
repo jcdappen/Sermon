@@ -342,8 +342,8 @@ const App = () => {
       onClick={onClick}
       className={`flex items-center w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
         isActive
-          ? 'bg-blue-600 text-white'
-          : 'text-gray-600 hover:bg-gray-200'
+          ? 'bg-brand text-white'
+          : 'text-kk-grey-dark hover:bg-brand/5 hover:text-brand'
       }`}
     >
       {icon}
@@ -356,18 +356,18 @@ const App = () => {
       return <div className="text-center p-8">Lade Daten...</div>;
     }
     if (error && !isDbSetupError) {
-       return <div className="text-center p-8 text-red-500 whitespace-pre-wrap">{error}</div>;
+       return <div className="text-center p-8 text-brand whitespace-pre-wrap">{error}</div>;
     }
      if (isDbSetupError) {
         return (
           <div className="text-center p-8 bg-white rounded-lg shadow-lg">
-            <WrenchScrewdriverIcon className="w-16 h-16 mx-auto text-yellow-500 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Datenbank-Einrichtung erforderlich</h2>
+            <WrenchScrewdriverIcon className="w-16 h-16 mx-auto text-kk-gold-dark mb-4" />
+            <h2 className="text-3xl text-brand mb-2">Datenbank-Einrichtung erforderlich</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <button
               onClick={handleSetupDatabase}
               disabled={isLoading}
-              className="flex items-center justify-center mx-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors duration-200"
+              className="flex items-center justify-center mx-auto px-6 py-3 bg-brand text-white rounded-lg hover:bg-brand-dark disabled:bg-brand-light transition-colors duration-200"
             >
               <WrenchScrewdriverIcon className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               {isLoading ? 'Richte ein...' : 'Datenbank jetzt einrichten'}
@@ -426,17 +426,20 @@ const App = () => {
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
-      <aside className="w-64 bg-white shadow-md flex flex-col">
-        <div className="p-4 border-b">
-          <h1 className="text-xl font-bold text-gray-800">Predigtplaner</h1>
-          <p className="text-xs text-gray-500">ChurchTools Sync</p>
+      <aside className="w-64 bg-white shadow-md flex flex-col border-t-4 border-brand">
+        <div className="p-5 border-b flex items-center gap-3">
+          <img src="/img/kreuzmarke.png" alt="" className="w-11 h-11 object-contain" />
+          <div className="min-w-0">
+            <h1 className="text-lg text-brand leading-tight tracking-normal">Predigtplaner</h1>
+            <p className="text-xs text-kk-grey-dark">Gemeinde in der Konkordia</p>
+          </div>
         </div>
         <nav className="flex-1 p-4 space-y-2">
            <NavItem onClick={() => setView(View.DASHBOARD)} isActive={view === View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />
            <NavItem onClick={() => setView(View.SYNC_LOG)} isActive={view === View.SYNC_LOG} icon={<SyncIcon className="w-5 h-5" />} label="Sync Protokoll" />
            
            <div className="pt-4 mt-2 border-t">
-                <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Jahresübersicht</h3>
+                <h3 className="px-4 text-xs text-gray-500 uppercase tracking-wider mb-2">Jahresübersicht</h3>
                 <div className="space-y-1">
                     {uniqueYears.map(year => (
                         <NavItem 

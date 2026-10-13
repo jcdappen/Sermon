@@ -85,7 +85,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg m-4">
         <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-xl font-semibold text-gray-800">Serienzuweisung erstellen</h3>
+          <h3 className="text-xl text-gray-800">Serienzuweisung erstellen</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <XMarkIcon className="w-6 h-6" />
           </button>
@@ -117,7 +117,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                     value={preacherCategory}
                     onChange={(e) => setPreacherCategory(e.target.value)}
                     disabled={!preacherName.trim()}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     {PREACHER_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
@@ -133,7 +133,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                 value={series}
                 onChange={(e) => setSeries(e.target.value)}
                 placeholder="z.B. Grundlagen des Glaubens"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
               />
             </div>
             <div>
@@ -146,7 +146,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="Wird für alle Termine übernommen"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
               />
             </div>
              <div>
@@ -159,7 +159,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                 value={familyTime}
                 onChange={(e) => setFamilyTime(e.target.value)}
                 placeholder="Thema der Familytime"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
               />
             </div>
              <div>
@@ -172,7 +172,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                 value={collection}
                 onChange={(e) => setCollection(e.target.value)}
                 placeholder="Zweck der Kollekte"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
               />
             </div>
              <div>
@@ -185,7 +185,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                 value={communion}
                 onChange={(e) => setCommunion(e.target.value)}
                 placeholder="Name der verantwortlichen Person"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
               />
             </div>
             
@@ -195,16 +195,16 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">Startdatum</label>
-                        <input type="date" id="start-date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"/>
+                        <input type="date" id="start-date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"/>
                     </div>
                      <div>
                         <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-1">Enddatum</label>
-                        <input type="date" id="end-date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"/>
+                        <input type="date" id="end-date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"/>
                     </div>
                 </div>
                 <div className="mt-4">
                     <label htmlFor="pattern" className="block text-sm font-medium text-gray-700 mb-1">Wiederholen an jedem</label>
-                    <select id="pattern" value={pattern} onChange={e => setPattern(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <select id="pattern" value={pattern} onChange={e => setPattern(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand">
                         <option value="every-week">Sonntag (Jede Woche)</option>
                         <option value="every-2-weeks">Sonntag (Alle 2 Wochen)</option>
                         <option value="first-sunday">1. Sonntag im Monat</option>
@@ -226,7 +226,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-brand text-white rounded-md hover:bg-brand-dark"
             >
               Zuweisungen speichern
             </button>

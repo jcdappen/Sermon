@@ -82,13 +82,13 @@ const PreacherInput: React.FC<PreacherInputProps> = ({ name, personId, onChange,
         onFocus={() => setIsOpen(true)}
         placeholder={placeholder || 'Name suchen oder eingeben'}
         autoComplete="off"
-        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
       />
       {showDropdown && (
         <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-y-auto">
           {isSearching && <li className="px-3 py-2 text-sm text-gray-500">Suche in ChurchTools...</li>}
           {!isSearching && searchError && (
-            <li className="px-3 py-2 text-sm text-red-600">ChurchTools-Suche nicht verfügbar</li>
+            <li className="px-3 py-2 text-sm text-brand-dark">ChurchTools-Suche nicht verfügbar</li>
           )}
           {!isSearching && !searchError && results.length === 0 && (
             <li className="px-3 py-2 text-sm text-gray-500">Keine Person gefunden – wird als Gast eingetragen</li>
@@ -98,7 +98,7 @@ const PreacherInput: React.FC<PreacherInputProps> = ({ name, personId, onChange,
               <button
                 type="button"
                 onClick={() => handleSelect(person)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-800 hover:bg-blue-50"
+                className="w-full text-left px-3 py-2 text-sm text-gray-800 hover:bg-brand/5"
               >
                 {person.name}
               </button>

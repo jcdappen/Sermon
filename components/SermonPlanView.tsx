@@ -12,10 +12,10 @@ interface SermonPlanViewProps {
 
 const getCategoryColor = (category: string | null): string => {
     switch(category) {
-        case 'Leitender Pastor': return 'text-purple-700';
-        case 'Gemeinderat': return 'text-sky-700';
-        case 'Gast': return 'text-amber-700';
-        case 'Gemeinde': return 'text-slate-700';
+        case 'Leitender Pastor': return 'text-brand-dark';
+        case 'Gemeinderat': return 'text-kk-teal-dark';
+        case 'Gast': return 'text-kk-gold-dark';
+        case 'Gemeinde': return 'text-kk-grey-dark';
         default: return 'text-gray-500';
     }
 }
@@ -32,8 +32,8 @@ const PreacherDisplay: React.FC<{
     if (status === 'assigned') { // "assigned" is used for "angefragt"
         return (
             <div>
-                <span className="font-semibold text-red-600">{name}</span>
-                <span className="ml-2 text-xs text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full">Angefragt</span>
+                <span className="font-semibold text-brand-dark">{name}</span>
+                <span className="ml-2 text-xs text-brand-dark bg-brand-light/40 px-1.5 py-0.5 rounded-full">Angefragt</span>
             </div>
         );
     }
@@ -51,7 +51,7 @@ const PreacherDisplay: React.FC<{
 const SyncStatusBadge: React.FC<{ sermon: SermonPlan }> = ({ sermon }) => {
     if (sermon.sync_status === 'error') {
         return (
-            <span title={`ChurchTools-Sync fehlgeschlagen: ${sermon.sync_error || 'Unbekannter Fehler'}`} className="inline-flex items-center mt-1 text-xs text-red-600">
+            <span title={`ChurchTools-Sync fehlgeschlagen: ${sermon.sync_error || 'Unbekannter Fehler'}`} className="inline-flex items-center mt-1 text-xs text-brand-dark">
                 <ExclamationCircleIcon className="w-4 h-4 mr-1" />
                 Nicht in ChurchTools
             </span>
@@ -59,7 +59,7 @@ const SyncStatusBadge: React.FC<{ sermon: SermonPlan }> = ({ sermon }) => {
     }
     if (sermon.sync_status === 'pending') {
         return (
-            <span title="Wird beim nächsten Sync an ChurchTools übertragen" className="inline-flex items-center mt-1 text-xs text-amber-600">
+            <span title="Wird beim nächsten Sync an ChurchTools übertragen" className="inline-flex items-center mt-1 text-xs text-kk-gold-dark">
                 <SyncIcon className="w-4 h-4 mr-1" />
                 Sync ausstehend
             </span>
@@ -119,7 +119,7 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
          <button
             onClick={onRecurringAssign}
             disabled={isLoading}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-300 transition-colors duration-200"
+            className="flex items-center px-4 py-2 bg-kk-teal-dark text-white rounded-lg hover:bg-kk-grey-dark disabled:bg-kk-teal-light transition-colors duration-200"
           >
             <CalendarDaysIcon className="w-5 h-5 mr-2" />
             Serienzuweisung
@@ -127,7 +127,7 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
           <button
             onClick={onSync}
             disabled={isLoading}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors duration-200"
+            className="flex items-center px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand-dark disabled:bg-brand-light transition-colors duration-200"
           >
             <SyncIcon className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             {isLoading ? 'Synchronisiere...' : 'Events synchronisieren'}
@@ -157,7 +157,7 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
                         <span>{formatDate(sermon.date)}</span>
                         {isDateInBWHolidays(sermon.date) && (
                             <span title="Liegt in den Schulferien (BW)">
-                                <SunIcon className="w-5 h-5 text-amber-500" />
+                                <SunIcon className="w-5 h-5 text-kk-gold" />
                             </span>
                         )}
                     </div>
@@ -177,7 +177,7 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
                 <td className="p-4">
                   <button
                     onClick={() => onAssign(sermon)}
-                    className="flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                    className="flex items-center text-brand hover:text-brand-dark text-sm"
                   >
                     <PencilIcon className="w-4 h-4 mr-1" />
                     {sermon.preacher_name ? 'Bearbeiten' : 'Zuweisen'}

@@ -26,7 +26,7 @@ const TabButton: React.FC<{
         onClick={onClick}
         className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${
             isActive 
-            ? 'bg-blue-600 text-white' 
+            ? 'bg-brand text-white' 
             : 'text-gray-600 hover:bg-gray-200'
         }`}
     >
@@ -58,7 +58,7 @@ const YearlyViewLayout: React.FC<YearlyViewLayoutProps> = ({
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg">
       <div className="flex justify-between items-center mb-6 border-b pb-4 gap-4 flex-wrap">
-        <h2 className="text-2xl font-bold text-gray-800">Jahresübersicht {year}</h2>
+        <h2 className="text-3xl text-brand">Jahresübersicht {year}</h2>
         <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
             <TabButton label="Predigtplan" isActive={activeView === 'plan'} onClick={() => onViewChange('plan')} />
             <TabButton label="Statistiken" isActive={activeView === 'stats'} onClick={() => onViewChange('stats')} />
