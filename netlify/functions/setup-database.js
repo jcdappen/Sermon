@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const { ensureChurchToolsColumns } = require('./lib/schema');
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -78,13 +79,7 @@ exports.handler = async (event, context) => {
     `);
 
     // ChurchTools-Verknüpfung (Event, Dienst "Predigt", Person)
-    await client.query(`
-      ALTER TABLE sermon_plans
-      ADD COLUMN IF NOT EXISTS ct_event_id INTEGER,
-      ADD COLUMN IF NOT EXISTS ct_event_service_id INTEGER,
-      ADD COLUMN IF NOT EXISTS preacher_person_id INTEGER,
-      ADD COLUMN IF NOT EXISTS sync_error TEXT;
-    `);
+    await ensureChurchToolsColumns(client);
 
     await client.query('COMMIT');
     
