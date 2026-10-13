@@ -1,6 +1,7 @@
 // Gemeinsamer ChurchTools-Client für die Netlify Functions.
 // Gleiches Muster wie im Gruppenmodul (scripts/fetch-groups.js):
-// Base-URL + "Authorization: Login {CHURCHTOOLS_TOKEN}".
+// Base-URL + "Authorization: Login {Token}".
+// Token aus CHURCHTOOLS_API_TOKEN (bestehende Netlify-Variable) oder CHURCHTOOLS_TOKEN.
 // Der Token bleibt ausschließlich serverseitig (Netlify-Umgebungsvariable).
 
 const BASE_URL = (process.env.CT_BASE_URL || 'https://gemeindekonkordia.church.tools').replace(/\/+$/, '');
@@ -9,10 +10,16 @@ const API_BASE = `${BASE_URL}/api`;
 const CALENDAR_NAME = process.env.CT_CALENDAR_NAME || 'Gottesdienst';
 const PREACHER_SERVICE_NAME = process.env.CT_PREACHER_SERVICE_NAME || 'Prediger';
 
+const TOKEN_MISSING_MESSAGE = 'Missing required environment variables: CHURCHTOOLS_API_TOKEN';
+
+function hasToken() {
+  return Boolean(process.env.CHURCHTOOLS_API_TOKEN || process.env.CHURCHTOOLS_TOKEN);
+}
+
 function getToken() {
-  const token = process.env.CHURCHTOOLS_TOKEN;
+  const token = process.env.CHURCHTOOLS_API_TOKEN || process.env.CHURCHTOOLS_TOKEN;
   if (!token) {
-    throw new Error('Missing required environment variables: CHURCHTOOLS_TOKEN');
+    throw new Error(TOKEN_MISSING_MESSAGE);
   }
   return token;
 }
@@ -188,6 +195,8 @@ async function searchPersons(query, limit = 10) {
 }
 
 module.exports = {
+  TOKEN_MISSING_MESSAGE,
+  hasToken,
   resolveIds,
   getServiceEvents,
   getEvent,

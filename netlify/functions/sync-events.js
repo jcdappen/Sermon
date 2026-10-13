@@ -118,9 +118,9 @@ exports.handler = async (event, context) => {
 
   const requiredEnvVars = [
     'NETLIFY_DATABASE_URL',
-    'CHURCHTOOLS_TOKEN'
   ];
   const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
+  if (!ct.hasToken()) missingEnvVars.push('CHURCHTOOLS_API_TOKEN');
   if (missingEnvVars.length > 0) {
       const msg = `Missing required environment variables: ${missingEnvVars.join(', ')}`;
       console.error(msg);
