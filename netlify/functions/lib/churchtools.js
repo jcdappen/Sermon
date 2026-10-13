@@ -289,8 +289,52 @@ async function searchPersons(query, limit = 10) {
     .slice(0, limit);
 }
 
+// Prüft Benutzername/Passwort (und ggf. 2FA-Code) direkt bei ChurchTools.
+// Das Passwort wird nur an ChurchTools weitergereicht, nie gespeichert oder geloggt.
+// Rückgabe: { ok: true, personId } | { ok: false, needsTotp?: true, error }
+async function verifyLogin(username, password, totpCode) {
+  const post = (path, body, cookie) => fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(cookie ? { Cookie: cookie } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  const readJson = async (res) => {
+    try { return JSON.parse(await res.text()); } catch { return null; }
+  };
+  const personIdOf = (json) => {
+    const id = Number(json?.data?.personId ?? json?.personId);
+    return Number.isInteger(id) && id > 0 ? id : null;
+  };
+
+  const res = await post('/login', { username, password, rememberMe: false });
+  const json = await readJson(res);
+  if (!res.ok) return { ok: false, error: 'invalid' };
+
+  const status = String(json?.data?.status ?? json?.status ?? '').toLowerCase();
+  if (status === 'totp') {
+    if (!totpCode) return { ok: false, needsTotp: true, error: 'totp_required' };
+    const setCookies = typeof res.headers.getSetCookie === 'function'
+      ? res.headers.getSetCookie()
+      : [res.headers.get('set-cookie')].filter(Boolean);
+    const cookie = setCookies.map(c => c.split(';')[0]).join('; ');
+    const totpRes = await post('/login/totp', { code: String(totpCode).trim() }, cookie);
+    const totpJson = await readJson(totpRes);
+    if (!totpRes.ok) return { ok: false, needsTotp: true, error: 'totp_invalid' };
+    const personId = personIdOf(totpJson) ?? personIdOf(json);
+    return personId ? { ok: true, personId } : { ok: false, error: 'invalid' };
+  }
+
+  const personId = personIdOf(json);
+  return personId ? { ok: true, personId } : { ok: false, error: 'invalid' };
+}
+
 module.exports = {
   TOKEN_MISSING_MESSAGE,
+  verifyLogin,
   hasToken,
   resolveIds,
   getServiceEvents,

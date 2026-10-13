@@ -28,6 +28,8 @@ Der Predigtplaner lädt die Gottesdienste direkt über die ChurchTools-API (glei
 | Variable | Pflicht | Beschreibung |
 |---|---|---|
 | `NETLIFY_DATABASE_URL` | ja | Postgres-Verbindung (wie bisher) |
+| `SESSION_SECRET` | ja | Geheimer Schlüssel für das Sitzungs-Cookie, mindestens 32 zufällige Zeichen (z. B. `openssl rand -base64 48`) |
+| `CT_LOGIN_PERSON_IDS` | nein | ChurchTools-Personen-IDs, die sich anmelden dürfen, kommagetrennt. Standard: `1572` („Kalender Öffentlich“) |
 | `CHURCHTOOLS_API_TOKEN` | ja | Login-Token eines ChurchTools-Benutzers (Header `Authorization: Login …`). Alternativ wird `CHURCHTOOLS_TOKEN` akzeptiert. |
 | `CHURCHTOOLS_BASE_URL` (oder `CT_BASE_URL`) | nein | Standard: `https://gemeindekonkordia.church.tools` (mit oder ohne `/api`) |
 | `CT_CALENDAR_ID` / `CT_CALENDAR_NAME` | nein | Kalender der Gottesdienste; Standard: Suche nach Name „Gottesdienst“ |
@@ -59,4 +61,5 @@ Der Token-Benutzer braucht in ChurchTools Rechte zum Sehen des Gottesdienst-Kale
 - Der ChurchTools-Token liegt nur serverseitig in Netlify und wird nie an den Browser übertragen.
 - Die Personensuche (`search-persons`) liefert ausschließlich ID und Anzeigenamen (max. 10 Treffer, ab 3 Zeichen) – keine Kontaktdaten oder Bilder. Gespeichert werden nur Name und Personen-ID des zugewiesenen Predigers.
 - Das Sync-Protokoll enthält keine Personennamen.
-- **Wichtig:** Netlify Functions sind öffentlich aufrufbar. Da nun Personendaten aus ChurchTools abrufbar sind, sollte die Seite zugangsgeschützt sein (z. B. Netlify Password Protection oder Netlify Identity).
+- **Login:** Alle Functions sind nur nach Anmeldung mit einem ChurchTools-Konto nutzbar (erlaubt: `CT_LOGIN_PERSON_IDS`). Benutzername und Passwort werden nur zur Prüfung an ChurchTools weitergereicht und weder gespeichert noch protokolliert; 2FA wird unterstützt.
+- Es wird ausschließlich ein technisch notwendiges Sitzungs-Cookie (`sermon_session`, HttpOnly, Secure, SameSite=Strict, 12 h) gesetzt; es enthält nur die Personen-ID und die Ablaufzeit. Ein Cookie-Banner ist dafür nicht erforderlich.

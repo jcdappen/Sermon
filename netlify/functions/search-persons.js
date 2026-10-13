@@ -1,8 +1,13 @@
 const ct = require('./lib/churchtools');
+const { requireSession } = require('./lib/auth');
 
 // Personensuche in ChurchTools für die Prediger-Auswahl.
 // Datenminimierung: Es werden nur ID und Anzeigename zurückgegeben.
 exports.handler = async (event, context) => {
+  // Nur für angemeldete Nutzer (ChurchTools-Login, siehe lib/auth.js).
+  const auth = requireSession(event);
+  if (auth.response) return auth.response;
+
   const headers = {
     'Content-Type': 'application/json',
     'Cache-Control': 'no-store'
