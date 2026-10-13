@@ -36,8 +36,9 @@ async function pushPreacher(db, row, serviceId, currentEs = null) {
     agreed: row.status === 'confirmed' || row.status === 'completed',
   };
 
-  if (!isUnchanged(ct.preacherFromService(es), wanted)) {
-    eventServiceId = await ct.setPreacher(row.ct_event_id, eventServiceId, wanted);
+  const current = ct.preacherFromService(es);
+  if (!isUnchanged(current, wanted)) {
+    eventServiceId = await ct.setPreacher(row.ct_event_id, eventServiceId, wanted, current.personId);
   }
 
   await db.query(`

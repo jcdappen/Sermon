@@ -163,7 +163,11 @@ function preacherFromService(es) {
 // aktualisiert. Je nach Version unterschiedlich – sie werden der Reihe nach
 // probiert, bis einer nicht mit 404/405 antwortet. Mit CT_SERVICE_REQUEST_PATH
 // (z. B. "/events/{eventId}/servicerequests/{id}") lässt sich der Pfad festlegen.
+// {personId} = aktuell eingetragene Person (laut API-Doku "Update a service
+// assignment" unter /persons/{personId}/servicerequests/{requestId}); ist der
+// Dienst unbesetzt oder verborgen, wird die neu einzutragende Person verwendet.
 const SERVICE_REQUEST_PATHS = [
+  '/persons/{personId}/servicerequests/{id}',
   '/events/{eventId}/servicerequests/{id}',
   '/servicerequests/{id}',
   '/events/{eventId}/services/{id}',
@@ -173,7 +177,7 @@ const INFORM_PERSON = ['1', 'true', 'ja', 'yes'].includes(String(process.env.CT_
 
 // Body nach Schema "ServiceRequestUpdateFields": Person per personId (CT-Person)
 // oder name (Gast), dazu isAccepted und inform_person.
-async function setPreacherViaRest(eventId, eventServiceId, { name, personId, agreed }) {
+async function setPreacherViaRest(eventId, eventServiceId, { name, personId, agreed }, currentPersonId = null) {
   const body = {
     ...(personId ? { personId } : { name: name || null }),
     isAccepted: Boolean(agreed),
@@ -181,8 +185,13 @@ async function setPreacherViaRest(eventId, eventServiceId, { name, personId, agr
   };
   const paths = process.env.CT_SERVICE_REQUEST_PATH ? [process.env.CT_SERVICE_REQUEST_PATH] : SERVICE_REQUEST_PATHS;
   let lastError;
+  const pathPersonId = currentPersonId || personId || null;
   for (const template of paths) {
-    const path = template.replace('{eventId}', eventId).replace('{id}', eventServiceId);
+    if (template.includes('{personId}') && !pathPersonId) continue;
+    const path = template
+      .replace('{eventId}', eventId)
+      .replace('{personId}', pathPersonId)
+      .replace('{id}', eventServiceId);
     try {
       return await request('PUT', path, { body });
     } catch (err) {
@@ -225,14 +234,15 @@ async function setPreacherViaAjax(eventServiceId, { name, personId, agreed }) {
 // CT_SERVICE_WRITE_MODE: "auto" (Standard: REST, bei 404/405 AJAX), "rest" oder "ajax".
 // Rückgabe: ID des (ggf. neu angelegten) Dienst-Eintrags – laut ChurchTools kann
 // eine Änderung einen neuen Eintrag erzeugen.
-async function setPreacher(eventId, eventServiceId, preacher) {
+// currentPersonId: die aktuell im Dienst eingetragene (sichtbare) Person, falls vorhanden.
+async function setPreacher(eventId, eventServiceId, preacher, currentPersonId = null) {
   const mode = (process.env.CT_SERVICE_WRITE_MODE || 'auto').toLowerCase();
   if (mode === 'ajax') {
     await setPreacherViaAjax(eventServiceId, preacher);
     return eventServiceId;
   }
   try {
-    const res = await setPreacherViaRest(eventId, eventServiceId, preacher);
+    const res = await setPreacherViaRest(eventId, eventServiceId, preacher, currentPersonId);
     const newId = Number(res?.data?.id ?? res?.id);
     return Number.isInteger(newId) && newId > 0 ? newId : eventServiceId;
   } catch (err) {
