@@ -77,6 +77,15 @@ exports.handler = async (event, context) => {
       ADD COLUMN IF NOT EXISTS communion_responsible VARCHAR(255);
     `);
 
+    // ChurchTools-Verknüpfung (Event, Dienst "Prediger", Person)
+    await client.query(`
+      ALTER TABLE sermon_plans
+      ADD COLUMN IF NOT EXISTS ct_event_id INTEGER,
+      ADD COLUMN IF NOT EXISTS ct_event_service_id INTEGER,
+      ADD COLUMN IF NOT EXISTS preacher_person_id INTEGER,
+      ADD COLUMN IF NOT EXISTS sync_error TEXT;
+    `);
+
     await client.query('COMMIT');
     
     return {

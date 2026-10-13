@@ -2,12 +2,14 @@
 import React, { useState } from 'react';
 import { SermonPlan } from '../types';
 import { XMarkIcon } from './icons/Icons';
+import PreacherInput from './PreacherInput';
 
 interface AssignSermonModalProps {
   sermon: SermonPlan;
   onClose: () => void;
   onSave: (details: {
     preacherName: string;
+    preacherPersonId: number | null;
     series: string;
     topic: string;
     notes: string;
@@ -27,6 +29,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
   onSave,
 }) => {
   const [preacherName, setPreacherName] = useState(sermon.preacher_name || '');
+  const [preacherPersonId, setPreacherPersonId] = useState<number | null>(sermon.preacher_person_id ?? null);
   const [preacherCategory, setPreacherCategory] = useState(sermon.preacher_category || 'Gemeinde');
   const [status, setStatus] = useState<SermonPlan['status']>(
     sermon.status === 'confirmed' ? 'confirmed' : 'assigned'
@@ -44,6 +47,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
 
     onSave({
       preacherName: preacherName,
+      preacherPersonId,
       series,
       topic,
       notes,
@@ -71,13 +75,13 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                   <label htmlFor="preacher" className="block text-sm font-medium text-gray-700 mb-1">
                     Prediger
                   </label>
-                  <input
-                    type="text"
-                    id="preacher"
-                    value={preacherName}
-                    onChange={(e) => setPreacherName(e.target.value)}
-                    placeholder="Namen eingeben"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  <PreacherInput
+                    name={preacherName}
+                    personId={preacherPersonId}
+                    onChange={(name, personId) => {
+                      setPreacherName(name);
+                      setPreacherPersonId(personId);
+                    }}
                   />
                 </div>
                 <div>

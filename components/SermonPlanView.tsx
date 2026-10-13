@@ -1,6 +1,6 @@
 import React from 'react';
 import { SermonPlan } from '../types';
-import { SyncIcon, PencilIcon, CalendarDaysIcon, SunIcon } from './icons/Icons';
+import { SyncIcon, PencilIcon, CalendarDaysIcon, SunIcon, ExclamationCircleIcon } from './icons/Icons';
 
 interface SermonPlanViewProps {
   sermonPlans: SermonPlan[];
@@ -46,6 +46,27 @@ const PreacherDisplay: React.FC<{
     // Default fallback for other statuses
     return <span className="text-gray-500">{name}</span>;
 }
+
+
+const SyncStatusBadge: React.FC<{ sermon: SermonPlan }> = ({ sermon }) => {
+    if (sermon.sync_status === 'error') {
+        return (
+            <span title={`ChurchTools-Sync fehlgeschlagen: ${sermon.sync_error || 'Unbekannter Fehler'}`} className="inline-flex items-center mt-1 text-xs text-red-600">
+                <ExclamationCircleIcon className="w-4 h-4 mr-1" />
+                Nicht in ChurchTools
+            </span>
+        );
+    }
+    if (sermon.sync_status === 'pending') {
+        return (
+            <span title="Wird beim nächsten Sync an ChurchTools übertragen" className="inline-flex items-center mt-1 text-xs text-amber-600">
+                <SyncIcon className="w-4 h-4 mr-1" />
+                Sync ausstehend
+            </span>
+        );
+    }
+    return null;
+};
 
 
 const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, onRecurringAssign, onSync, isLoading }) => {
@@ -146,6 +167,7 @@ const SermonPlanView: React.FC<SermonPlanViewProps> = ({ sermonPlans, onAssign, 
                 </td>
                 <td className="p-4 text-sm">
                     <PreacherDisplay name={sermon.preacher_name} category={sermon.preacher_category} status={sermon.status} />
+                    <SyncStatusBadge sermon={sermon} />
                 </td>
                 <td className="p-4 text-sm text-gray-500">{sermon.theme_series || '-'}</td>
                 <td className="p-4 text-sm text-gray-500">{sermon.theme_topic || 'Thema offen'}</td>

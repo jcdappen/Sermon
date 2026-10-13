@@ -98,8 +98,10 @@ const App = () => {
       await fetchData(); // Refresh all data
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-       if (errorMessage.includes('Missing required environment variables: ICAL_URL')) {
-        setError('Die iCal-URL ist nicht konfiguriert. Bitte fügen Sie die Umgebungsvariable ICAL_URL in Ihren Netlify-Build-Einstellungen hinzu, um Gottesdienste synchronisieren zu können.');
+       if (errorMessage.includes('CHURCHTOOLS_TOKEN')) {
+        setError('Der ChurchTools-Zugang ist nicht konfiguriert. Bitte fügen Sie die Umgebungsvariable CHURCHTOOLS_TOKEN in Ihren Netlify-Einstellungen hinzu, um Gottesdienste synchronisieren zu können.');
+      } else if (errorMessage.includes('ChurchTools') || errorMessage.includes('Kalender') || errorMessage.includes('Dienst')) {
+        setError(`Fehler bei der Synchronisation mit ChurchTools:\n${errorMessage}`);
       } else {
         setError('Fehler bei der Synchronisation der Events.');
       }
@@ -142,6 +144,7 @@ const App = () => {
 
   const handleSaveAssignment = async (details: {
     preacherName: string;
+    preacherPersonId: number | null;
     series: string;
     topic: string;
     notes: string;
@@ -157,15 +160,19 @@ const App = () => {
     // If preacher name is cleared, also clear the category to prevent orphaned data.
     if (finalDetails.preacherName.trim() === '') {
         finalDetails.preacherCategory = '';
+        finalDetails.preacherPersonId = null;
     }
 
     setIsLoading(true);
     setError(null);
     try {
-      await api.assignPreacher(
+      const result = await api.assignPreacher(
         selectedSermon.event_uid,
         finalDetails
       );
+      if (result && result.ctSynced === false) {
+        alert(result.message);
+      }
       await fetchData(); // Refresh data to show changes
       handleCloseModal();
     } catch (err) {
@@ -185,6 +192,7 @@ const App = () => {
   
   const handleSaveRecurringAssignment = async (details: {
       preacherName: string;
+      preacherPersonId: number | null;
       preacherCategory: string;
       series: string;
       topic: string;
@@ -266,6 +274,7 @@ const App = () => {
 
              await api.assignPreacher(sermon.event_uid, {
                  preacherName: details.preacherName,
+                 preacherPersonId: isAssigningPreacher ? details.preacherPersonId : null,
                  series: details.series,
                  topic: details.topic,
                  notes: sermon.sermon_notes || '',
@@ -389,7 +398,7 @@ const App = () => {
       <aside className="w-64 bg-white shadow-md flex flex-col">
         <div className="p-4 border-b">
           <h1 className="text-xl font-bold text-gray-800">Predigtplaner</h1>
-          <p className="text-xs text-gray-500">iCal Sync</p>
+          <p className="text-xs text-gray-500">ChurchTools Sync</p>
         </div>
         <nav className="flex-1 p-4 space-y-2">
            <NavItem onClick={() => setView(View.DASHBOARD)} isActive={view === View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />
