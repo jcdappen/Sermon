@@ -35,7 +35,7 @@ Der Predigtplaner lädt die Gottesdienste direkt über die ChurchTools-API (glei
 | `CT_PREACHER_SERVICE_NAME` / `CT_PREACHER_SERVICE_GROUP_ID` | nein | Nur bei `auto`: Dienstname (Standard „Predigt“) und Dienstgruppe (Standard `6`) |
 | `CT_SYNC_MONTHS` | nein | Wie viele Monate im Voraus synchronisiert werden (Standard: 12, plus 30 Tage rückwirkend) |
 | `CT_INFORM_PERSON` | nein | `true`: ChurchTools benachrichtigt den eingetragenen Prediger. Standard: `false` (still eintragen) |
-| `CT_SERVICE_REQUEST_PATH` | nein | Fester Pfad zum Aktualisieren eines Dienst-Eintrags, z. B. `/events/{eventId}/servicerequests/{id}`. Standard: gängige Pfade werden der Reihe nach probiert |
+| `CT_SERVICE_REQUEST_PATH` | nein | Fester Pfad zum Aktualisieren eines Dienst-Eintrags, z. B. `/events/{eventId}/servicerequests/{id}`. Platzhalter `{personId}`, `{eventId}`, `{id}`. Standard: `/persons/{personId}/servicerequests/{id}` und weitere gängige Pfade werden der Reihe nach probiert |
 | `CT_SERVICE_WRITE_MODE` | nein | `auto` (Standard: REST, bei 404/405 Legacy-AJAX `updateEventService`), `rest` oder `ajax` |
 
 `ICAL_URL` wird nicht mehr benötigt.
