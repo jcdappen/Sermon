@@ -28,7 +28,7 @@ async function pushPreacher(db, row, serviceId, currentEs = null) {
   if (!es) {
     throw new Error(`Event ${row.ct_event_id} hat keinen Dienst "Predigt" in ChurchTools.`);
   }
-  const eventServiceId = es.id;
+  let eventServiceId = es.id;
 
   const wanted = {
     name: row.preacher_name || null,
@@ -37,7 +37,7 @@ async function pushPreacher(db, row, serviceId, currentEs = null) {
   };
 
   if (!isUnchanged(ct.preacherFromService(es), wanted)) {
-    await ct.setPreacher(row.ct_event_id, eventServiceId, wanted);
+    eventServiceId = await ct.setPreacher(row.ct_event_id, eventServiceId, wanted);
   }
 
   await db.query(`
