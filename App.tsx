@@ -7,11 +7,14 @@ import SyncLogView from './components/SyncLogView';
 import DashboardView from './components/DashboardView';
 import AssignSermonModal from './components/AssignSermonModal';
 import RecurringAssignmentModal from './components/RecurringAssignmentModal';
+import LoginView from './components/LoginView';
 import { SyncIcon, DocumentTextIcon, WrenchScrewdriverIcon, ChartBarIcon, UsersIcon, HomeIcon, CalendarDaysIcon } from './components/icons/Icons';
 
 export type YearlyViewType = 'plan' | 'stats' | 'people';
 
 const App = () => {
+  // 'checking' beim Start, 'in' mit gültiger Sitzung, 'out' → Login-Seite.
+  const [authState, setAuthState] = useState<'checking' | 'in' | 'out'>('checking');
   const [view, setView] = useState<View>(View.DASHBOARD);
   const [sermonPlans, setSermonPlans] = useState<SermonPlan[]>([]);
   const [syncLogs, setSyncLogs] = useState<SyncLog[]>([]);
@@ -59,8 +62,27 @@ const App = () => {
 
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    api.getSession()
+      .then(({ loggedIn }) => setAuthState(loggedIn ? 'in' : 'out'))
+      .catch(() => setAuthState('out'));
+    const handleUnauthorized = () => setAuthState('out');
+    window.addEventListener(api.UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => window.removeEventListener(api.UNAUTHORIZED_EVENT, handleUnauthorized);
+  }, []);
+
+  useEffect(() => {
+    if (authState === 'in') fetchData();
+  }, [fetchData, authState]);
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } finally {
+      setSermonPlans([]);
+      setSyncLogs([]);
+      setAuthState('out');
+    }
+  };
 
   const uniqueYears = useMemo(() => {
     const years = new Set(sermonPlans.map(p => new Date(p.date).getFullYear()));
@@ -395,6 +417,13 @@ const App = () => {
     }
   };
 
+  if (authState === 'checking') {
+    return <div className="flex h-screen items-center justify-center bg-gray-100 text-gray-500">Lade...</div>;
+  }
+  if (authState === 'out') {
+    return <LoginView onLoggedIn={() => setAuthState('in')} />;
+  }
+
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       <aside className="w-64 bg-white shadow-md flex flex-col">
@@ -421,6 +450,14 @@ const App = () => {
                 </div>
            </div>
         </nav>
+        <div className="p-4 border-t">
+          <button
+            onClick={handleLogout}
+            className="w-full px-4 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-200"
+          >
+            Abmelden
+          </button>
+        </div>
       </aside>
       <main className="flex-1 p-6 overflow-auto">
         {renderView()}

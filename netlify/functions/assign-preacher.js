@@ -2,10 +2,14 @@ const { Pool } = require('pg');
 const ct = require('./lib/churchtools');
 const { pushPreacher, markPushError } = require('./lib/preacher-sync');
 const { ensureChurchToolsColumns } = require('./lib/schema');
+const { requireSession } = require('./lib/auth');
 
 exports.handler = async (event, context) => {
+  // Nur für angemeldete Nutzer (ChurchTools-Login, siehe lib/auth.js).
+  const auth = requireSession(event);
+  if (auth.response) return auth.response;
+
   const headers = {
-    'Access-Control-Allow-Origin': '*',
     'Content-Type': 'application/json'
   };
 

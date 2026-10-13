@@ -2,6 +2,7 @@ const { Pool } = require('pg');
 const ct = require('./lib/churchtools');
 const { pushPreacher, markPushError, PUSH_ERROR_PREFIX } = require('./lib/preacher-sync');
 const { ensureChurchToolsColumns } = require('./lib/schema');
+const { requireSession } = require('./lib/auth');
 
 // YYYY-MM-DD in deutscher Zeitzone (vermeidet Datumsverschiebung durch UTC).
 const toBerlinDate = (date) =>
@@ -240,8 +241,11 @@ function summarizeFailures(failures) {
 }
 
 exports.handler = async (event, context) => {
+  // Nur für angemeldete Nutzer (ChurchTools-Login, siehe lib/auth.js).
+  const auth = requireSession(event);
+  if (auth.response) return auth.response;
+
   const headers = {
-    'Access-Control-Allow-Origin': '*',
     'Content-Type': 'application/json'
   };
 

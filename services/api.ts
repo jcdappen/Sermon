@@ -9,8 +9,15 @@ interface ApiResponse<T> {
 }
 
 // Helper function to handle API requests to Netlify functions
+// Wird ausgelöst, wenn der Server "nicht angemeldet" meldet – die App zeigt dann den Login.
+export const UNAUTHORIZED_EVENT = 'sermon:unauthorized';
+
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`/.netlify/functions/${endpoint}`, options);
+  const response = await fetch(`/.netlify/functions/${endpoint}`, { credentials: 'same-origin', ...options });
+
+  if (response.status === 401) {
+    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
+  }
 
   if (!response.ok) {
     let errorMessage = `Request failed with status ${response.status}`;
@@ -91,4 +98,32 @@ export const setupDatabase = async (): Promise<{ message: string }> => {
   return await apiRequest<{ message: string }>('setup-database', {
     method: 'POST',
   });
+};
+
+export const getSession = async (): Promise<{ loggedIn: boolean }> => {
+  return await apiRequest<{ loggedIn: boolean }>('session');
+};
+
+export type LoginResult = { ok: true } | { ok: false; error: string; needsTotp: boolean };
+
+// Login liefert bei falschen Daten bewusst 401 – hier ohne globales Abmelde-Event auswerten.
+export const login = async (username: string, password: string, totpCode?: string): Promise<LoginResult> => {
+  const response = await fetch('/.netlify/functions/login', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, totpCode: totpCode || undefined }),
+  });
+  let body: { success?: boolean; error?: string; needsTotp?: boolean } = {};
+  try {
+    body = await response.json();
+  } catch {
+    // keine JSON-Antwort
+  }
+  if (response.ok && body.success) return { ok: true };
+  return { ok: false, error: body.error || 'Anmeldung fehlgeschlagen.', needsTotp: Boolean(body.needsTotp) };
+};
+
+export const logout = async (): Promise<void> => {
+  await apiRequest<{ loggedOut: boolean }>('logout', { method: 'POST' });
 };
