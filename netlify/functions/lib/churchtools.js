@@ -137,6 +137,30 @@ function findPreacherService(event, serviceId) {
   return pool.find(s => s.person || s.personId || s.name) ?? pool[0];
 }
 
+// Manche Listen-Antworten enthalten zur Zuweisung nur die (veraltete) personId,
+// aber weder person.title noch name. Dann wird der Name einmalig nachgeladen
+// (nur Vor- und Nachname, nichts wird gespeichert außer dem Anzeigenamen).
+async function fillMissingPersonNames(events, serviceId) {
+  const cache = new Map();
+  for (const event of events) {
+    const es = findPreacherService(event, serviceId);
+    if (!es || es.isValid === false || es.person?.icon === 'user-shield') continue;
+    if ((es.person?.title || es.name || '').trim()) continue;
+    const personId = Number(es.personId ?? es.person?.domainIdentifier);
+    if (!Number.isInteger(personId) || personId <= 0) continue;
+    if (!cache.has(personId)) {
+      try {
+        const res = await apiGet(`/persons/${personId}`);
+        const p = res?.data ?? res ?? {};
+        cache.set(personId, `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() || null);
+      } catch {
+        cache.set(personId, null);
+      }
+    }
+    if (cache.get(personId)) es.name = cache.get(personId);
+  }
+}
+
 // Für Fehlermeldungen: die im Event vorhandenen Dienst-IDs (ohne Personendaten).
 function listServiceIds(event) {
   const ids = [...new Set((event.eventServices ?? []).map(eventServiceServiceId).filter(id => !isNaN(id)))];
@@ -272,6 +296,7 @@ module.exports = {
   getServiceEvents,
   getEvent,
   findPreacherService,
+  fillMissingPersonNames,
   listServiceIds,
   preacherFromService,
   setPreacher,

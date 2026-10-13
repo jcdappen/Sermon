@@ -50,10 +50,19 @@ async function pushPreacher(db, row, serviceId, currentEs = null) {
   return { pushed: true };
 }
 
+// Fehler beim Schreiben nach ChurchTools werden mit diesem Präfix gespeichert.
+// Nur solche Zeilen werden beim nächsten Sync erneut übertragen – andere Fehler
+// (z. B. fehlender Dienst) lösen nie einen Schreibzugriff aus.
+const PUSH_ERROR_PREFIX = 'Übertragung nach ChurchTools: ';
+
 async function markSyncError(db, rowId, message) {
   await db.query(`
     UPDATE sermon_plans SET sync_status = 'error', sync_error = $1 WHERE id = $2
   `, [message.slice(0, 1000), rowId]);
 }
 
-module.exports = { pushPreacher, markSyncError };
+async function markPushError(db, rowId, message) {
+  await markSyncError(db, rowId, PUSH_ERROR_PREFIX + message);
+}
+
+module.exports = { pushPreacher, markSyncError, markPushError, PUSH_ERROR_PREFIX };

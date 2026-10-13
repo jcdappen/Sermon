@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 const ct = require('./lib/churchtools');
-const { pushPreacher, markSyncError } = require('./lib/preacher-sync');
+const { pushPreacher, markSyncError, markPushError, PUSH_ERROR_PREFIX } = require('./lib/preacher-sync');
 const { ensureChurchToolsColumns } = require('./lib/schema');
 
 // YYYY-MM-DD in deutscher Zeitzone (vermeidet Datumsverschiebung durch UTC).
@@ -32,11 +32,13 @@ async function syncEvent(db, event, serviceId) {
       UPDATE sermon_plans SET event_uid = $1
       WHERE id = (
         SELECT id FROM sermon_plans
-        WHERE event_uid NOT LIKE 'ct-%' AND start_time = $2
-        ORDER BY id LIMIT 1
+        WHERE event_uid NOT LIKE 'ct-%'
+          AND (start_time = $2::timestamptz OR date = $3::date)
+        ORDER BY abs(extract(epoch FROM start_time - $2::timestamptz)), id
+        LIMIT 1
       )
       RETURNING *
-    `, [eventUid, start.toISOString()]));
+    `, [eventUid, start.toISOString(), toBerlinDate(start)]));
   }
 
   if (rows.length === 0) {
@@ -77,13 +79,16 @@ async function syncEvent(db, event, serviceId) {
   // Beim ersten Abgleich einer übernommenen (iCal-)Zeile gilt ein lokal
   // eingetragener Prediger ebenfalls als ausstehend, solange CT leer ist.
   const firstLinkWithLocalPreacher = !row.ct_event_id && row.preacher_name && !ctPreacher.name;
-  if (row.sync_status === 'pending' || row.sync_status === 'error' || firstLinkWithLocalPreacher) {
+  // Fehlgeschlagene Übertragungen werden wiederholt; andere Fehler (z. B. fehlender
+  // Dienst) nie – sonst könnte ein leerer lokaler Stand den Prediger in CT löschen.
+  const retryFailedPush = row.sync_status === 'error' && String(row.sync_error || '').startsWith(PUSH_ERROR_PREFIX);
+  if (row.sync_status === 'pending' || retryFailedPush || firstLinkWithLocalPreacher) {
     try {
       await pushPreacher(db, { ...row, ct_event_id: event.id, ct_event_service_id: es.id }, serviceId, es);
       return { status: 'pushed' };
     } catch (err) {
-      await markSyncError(db, row.id, err.message);
-      return { status: 'error', error: `Übertragung nach ChurchTools: ${err.message}` };
+      await markPushError(db, row.id, err.message);
+      return { status: 'error', error: PUSH_ERROR_PREFIX + err.message };
     }
   }
 
@@ -102,6 +107,76 @@ async function syncEvent(db, event, serviceId) {
     WHERE id = $5
   `, [ctPreacher.name, ctPreacher.personId, statusFromPreacher(ctPreacher, row.status), preacherChanged, row.id, !ctPreacher.name]);
   return { status: 'pulled' };
+}
+
+// Führt alte (iCal-)Zeilen, die keinem Event zugeordnet wurden, mit der
+// ChurchTools-Zeile vom selben Tag zusammen: lokale Angaben (Serie, Thema, Notizen,
+// Familytime, Kollekte, Abendmahl, Kategorie) werden übernommen, wo die CT-Zeile
+// leer ist; ein lokaler Prediger nur, wenn in ChurchTools niemand eingetragen ist
+// (er wird dann beim nächsten Sync übertragen). Danach wird die alte Zeile entfernt.
+async function mergeLeftoverRows(db, fromDate, toDate) {
+  const { rows: leftovers } = await db.query(`
+    SELECT * FROM sermon_plans
+    WHERE event_uid NOT LIKE 'ct-%' AND date BETWEEN $1::date AND $2::date
+  `, [fromDate, toDate]);
+  let merged = 0;
+  for (const old of leftovers) {
+    const { rows: targets } = await db.query(`
+      SELECT * FROM sermon_plans
+      WHERE event_uid LIKE 'ct-%' AND date = $1::date
+      ORDER BY abs(extract(epoch FROM start_time - $2::timestamptz)), id
+      LIMIT 1
+    `, [old.date, old.start_time]);
+    if (targets.length === 0) continue;
+    const target = targets[0];
+    const takePreacher = !target.preacher_name && Boolean(old.preacher_name);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`
+        UPDATE sermon_plans SET
+          theme_series = COALESCE(theme_series, $1),
+          theme_topic = COALESCE(theme_topic, $2),
+          sermon_notes = COALESCE(sermon_notes, $3),
+          family_time_topic = COALESCE(family_time_topic, $4),
+          collection_purpose = COALESCE(collection_purpose, $5),
+          communion_responsible = COALESCE(communion_responsible, $6),
+          preacher_category = COALESCE(preacher_category, $7)
+        WHERE id = $8
+      `, [old.theme_series, old.theme_topic, old.sermon_notes, old.family_time_topic,
+          old.collection_purpose, old.communion_responsible, old.preacher_category, target.id]);
+      if (takePreacher) {
+        await client.query(`
+          UPDATE sermon_plans
+          SET preacher_name = $1, preacher_person_id = $2, status = $3, sync_status = 'pending', updated_at = NOW()
+          WHERE id = $4
+        `, [old.preacher_name, old.preacher_person_id ?? null, old.status, target.id]);
+      }
+      await client.query('DELETE FROM sermon_plans WHERE id = $1', [old.id]);
+      await client.query('COMMIT');
+      merged++;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+  return merged;
+}
+
+// Überblick, was ChurchTools im Dienst "Predigt" liefert (nur Zahlen, keine Namen).
+function preacherStats(events, serviceId) {
+  const stats = { named: 0, concealed: 0, open: 0, noService: 0 };
+  for (const event of events) {
+    const es = ct.findPreacherService(event, serviceId);
+    if (!es) { stats.noService++; continue; }
+    const p = ct.preacherFromService(es);
+    if (!p.name) stats.open++;
+    else if (p.concealed) stats.concealed++;
+    else stats.named++;
+  }
+  return stats;
 }
 
 // Häufigste Fehlergründe (max. 3, gekürzt) für Protokoll und Hinweis im Frontend.
@@ -164,6 +239,8 @@ exports.handler = async (event, context) => {
     to.setMonth(to.getMonth() + months);
 
     const events = await ct.getServiceEvents(calendarId, toBerlinDate(from), toBerlinDate(to));
+    await ct.fillMissingPersonNames(events, serviceId);
+    const stats = preacherStats(events, serviceId);
 
     const counts = { pulled: 0, pushed: 0, error: 0 };
     const failures = [];
@@ -179,9 +256,14 @@ exports.handler = async (event, context) => {
       }
     }
 
+    const merged = await mergeLeftoverRows(pool, toBerlinDate(from), toBerlinDate(to));
+
     const synced = counts.pulled + counts.pushed;
     let message = `${synced} Gottesdienste mit ChurchTools synchronisiert (${counts.pushed} Prediger nach ChurchTools übertragen)` +
-      (counts.error ? `, ${counts.error} mit Fehler` : '');
+      ` – Dienst "Predigt" in ChurchTools: ${stats.named} besetzt, ${stats.concealed} verborgen, ${stats.open} offen` +
+      (stats.noService ? `, ${stats.noService} ohne Dienst` : '') +
+      (merged ? ` – ${merged} alte Einträge zusammengeführt` : '') +
+      (counts.error ? ` – ${counts.error} mit Fehler` : '');
     if (failures.length) {
       message += `: ${summarizeFailures(failures)}`;
     }
