@@ -98,8 +98,8 @@ const App = () => {
       await fetchData(); // Refresh all data
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-       if (errorMessage.includes('CHURCHTOOLS_TOKEN')) {
-        setError('Der ChurchTools-Zugang ist nicht konfiguriert. Bitte fügen Sie die Umgebungsvariable CHURCHTOOLS_TOKEN in Ihren Netlify-Einstellungen hinzu, um Gottesdienste synchronisieren zu können.');
+       if (errorMessage.includes('CHURCHTOOLS_API_TOKEN')) {
+        setError('Der ChurchTools-Zugang ist nicht konfiguriert. Bitte fügen Sie die Umgebungsvariable CHURCHTOOLS_API_TOKEN in Ihren Netlify-Einstellungen hinzu, um Gottesdienste synchronisieren zu können.');
       } else if (errorMessage.includes('ChurchTools') || errorMessage.includes('Kalender') || errorMessage.includes('Dienst')) {
         setError(`Fehler bei der Synchronisation mit ChurchTools:\n${errorMessage}`);
       } else {

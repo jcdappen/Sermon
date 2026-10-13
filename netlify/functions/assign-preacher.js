@@ -92,7 +92,7 @@ exports.handler = async (event, context) => {
     // Prediger direkt in den ChurchTools-Dienst übertragen.
     let ctMessage = '';
     let logStatus = 'success';
-    if (!process.env.CHURCHTOOLS_TOKEN) {
+    if (!ct.hasToken()) {
       ctMessage = ' (ChurchTools nicht konfiguriert, nur lokal gespeichert)';
       logStatus = 'warning';
     } else {

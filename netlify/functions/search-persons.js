@@ -16,11 +16,11 @@ exports.handler = async (event, context) => {
     };
   }
 
-  if (!process.env.CHURCHTOOLS_TOKEN) {
+  if (!ct.hasToken()) {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ success: false, error: 'Missing required environment variables: CHURCHTOOLS_TOKEN' }),
+      body: JSON.stringify({ success: false, error: ct.TOKEN_MISSING_MESSAGE }),
     };
   }
 
