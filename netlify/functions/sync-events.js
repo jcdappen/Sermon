@@ -14,7 +14,7 @@ const statusFromPreacher = ({ name, agreed }, currentStatus) => {
 };
 
 // Synchronisiert ein einzelnes ChurchTools-Event mit der Datenbank.
-// Rückgabe: 'pulled' | 'pushed' | 'error'
+// Rückgabe: { status: 'pulled' | 'pushed' | 'error', error?: string }
 async function syncEvent(db, event, serviceId) {
   const eventUid = `ct-${event.id}`;
   const start = new Date(event.startDate);
@@ -22,6 +22,7 @@ async function syncEvent(db, event, serviceId) {
   const title = event.name || 'Unbenannter Gottesdienst';
   const es = ct.findPreacherService(event, serviceId);
   const ctPreacher = ct.preacherFromService(es);
+  const noServiceError = `Kein Dienst "Predigt" (ID ${serviceId}) im ChurchTools-Event. Vorhandene Dienst-IDs: ${ct.listServiceIds(event)}`;
 
   // Bestehende (iCal-)Zeile zum gleichen Termin übernehmen, damit lokale
   // Angaben wie Serie, Thema, Kollekte oder Notizen erhalten bleiben.
@@ -52,9 +53,9 @@ async function syncEvent(db, event, serviceId) {
       event.id, es?.id ?? null,
       ctPreacher.name, ctPreacher.personId, statusFromPreacher(ctPreacher),
       es ? 'synced' : 'error',
-      es ? null : 'Kein Dienst "Predigt" im ChurchTools-Event.',
+      es ? null : noServiceError,
     ]);
-    return es ? 'pulled' : 'error';
+    return es ? { status: 'pulled' } : { status: 'error', error: noServiceError };
   }
 
   const row = rows[0];
@@ -68,8 +69,8 @@ async function syncEvent(db, event, serviceId) {
   `, [toBerlinDate(start), title, start.toISOString(), end.toISOString(), event.id, es?.id ?? null, row.id]);
 
   if (!es) {
-    await markSyncError(db, row.id, 'Kein Dienst "Predigt" im ChurchTools-Event.');
-    return 'error';
+    await markSyncError(db, row.id, noServiceError);
+    return { status: 'error', error: noServiceError };
   }
 
   // Lokale, noch nicht übertragene Änderung → nach ChurchTools schreiben.
@@ -79,10 +80,10 @@ async function syncEvent(db, event, serviceId) {
   if (row.sync_status === 'pending' || row.sync_status === 'error' || firstLinkWithLocalPreacher) {
     try {
       await pushPreacher(db, { ...row, ct_event_id: event.id, ct_event_service_id: es.id }, serviceId);
-      return 'pushed';
+      return { status: 'pushed' };
     } catch (err) {
       await markSyncError(db, row.id, err.message);
-      return 'error';
+      return { status: 'error', error: `Übertragung nach ChurchTools: ${err.message}` };
     }
   }
 
@@ -100,7 +101,21 @@ async function syncEvent(db, event, serviceId) {
         updated_at = CASE WHEN $4 THEN NOW() ELSE updated_at END
     WHERE id = $5
   `, [ctPreacher.name, ctPreacher.personId, statusFromPreacher(ctPreacher, row.status), preacherChanged, row.id]);
-  return 'pulled';
+  return { status: 'pulled' };
+}
+
+// Häufigste Fehlergründe (max. 3, gekürzt) für Protokoll und Hinweis im Frontend.
+function summarizeFailures(failures) {
+  const byMessage = new Map();
+  for (const { error } of failures) {
+    const key = String(error).slice(0, 300);
+    byMessage.set(key, (byMessage.get(key) || 0) + 1);
+  }
+  return [...byMessage.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([msg, n]) => `${msg} (${n}×)`)
+    .join(' | ');
 }
 
 exports.handler = async (event, context) => {
@@ -151,23 +166,35 @@ exports.handler = async (event, context) => {
     const events = await ct.getServiceEvents(calendarId, toBerlinDate(from), toBerlinDate(to));
 
     const counts = { pulled: 0, pushed: 0, error: 0 };
+    const failures = [];
     for (const ctEvent of events) {
       try {
-        counts[await syncEvent(pool, ctEvent, serviceId)]++;
+        const result = await syncEvent(pool, ctEvent, serviceId);
+        counts[result.status]++;
+        if (result.error) failures.push({ eventId: ctEvent.id, error: result.error });
       } catch (err) {
         console.error(`Sync-Fehler bei Event ${ctEvent.id}:`, err);
         counts.error++;
+        failures.push({ eventId: ctEvent.id, error: err.message });
       }
     }
 
     const synced = counts.pulled + counts.pushed;
-    const message = `${synced} Gottesdienste mit ChurchTools synchronisiert (${counts.pushed} Prediger nach ChurchTools übertragen)` +
+    let message = `${synced} Gottesdienste mit ChurchTools synchronisiert (${counts.pushed} Prediger nach ChurchTools übertragen)` +
       (counts.error ? `, ${counts.error} mit Fehler` : '');
+    if (failures.length) {
+      message += `: ${summarizeFailures(failures)}`;
+    }
 
     await pool.query(`
-      INSERT INTO sync_log (sync_type, status, message, events_count)
-      VALUES ('pull_events', $1, $2, $3)
-    `, [counts.error ? 'warning' : 'success', message, synced]);
+      INSERT INTO sync_log (sync_type, status, message, events_count, error_details)
+      VALUES ('pull_events', $1, $2, $3, $4::jsonb)
+    `, [
+      counts.error ? 'warning' : 'success',
+      message,
+      synced,
+      failures.length ? JSON.stringify({ failures: failures.slice(0, 20) }) : null,
+    ]);
 
     return {
       statusCode: 200,
