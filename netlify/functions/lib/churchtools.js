@@ -119,21 +119,34 @@ async function getEvent(eventId) {
   return res?.data ?? res;
 }
 
+// Dienst-ID eines Event-Dienstes – ChurchTools liefert sie je nach Version
+// als Zahl, als String oder verschachtelt unter "service".
+function eventServiceServiceId(es) {
+  return Number(es.serviceId ?? es.service?.id ?? es.service?.domainIdentifier);
+}
+
 // Liefert den ersten Dienst "Predigt" eines Events (oder null).
 function findPreacherService(event, serviceId) {
   const services = event.eventServices ?? [];
-  const matching = services.filter(s => s.serviceId === serviceId);
+  const matching = services.filter(s => eventServiceServiceId(s) === Number(serviceId));
   if (matching.length === 0) return null;
   // Bevorzugt einen bereits besetzten Eintrag, damit der eigentliche Prediger gefunden wird.
   return matching.find(s => s.personId || s.name) ?? matching[0];
+}
+
+// Für Fehlermeldungen: die im Event vorhandenen Dienst-IDs (ohne Personendaten).
+function listServiceIds(event) {
+  const ids = [...new Set((event.eventServices ?? []).map(eventServiceServiceId).filter(id => !isNaN(id)))];
+  return ids.length ? ids.join(', ') : 'keine (eventServices fehlen in der API-Antwort)';
 }
 
 // Normalisiert die Prediger-Daten eines Event-Dienstes.
 function preacherFromService(es) {
   if (!es) return { name: null, personId: null, agreed: false };
   const name = (es.person?.title || es.name || '').trim() || null;
-  const personId = es.personId ?? (es.person?.domainIdentifier ? parseInt(es.person.domainIdentifier, 10) : null);
-  return { name, personId: name ? personId ?? null : null, agreed: Boolean(es.agreed) };
+  const rawPersonId = es.personId ?? es.person?.domainIdentifier ?? null;
+  const personId = rawPersonId !== null && !isNaN(Number(rawPersonId)) ? Number(rawPersonId) : null;
+  return { name, personId: name ? personId : null, agreed: Boolean(es.agreed) };
 }
 
 async function setPreacherViaRest(eventId, eventServiceId, { name, personId, agreed }) {
@@ -207,6 +220,7 @@ module.exports = {
   getServiceEvents,
   getEvent,
   findPreacherService,
+  listServiceIds,
   preacherFromService,
   setPreacher,
   searchPersons,
