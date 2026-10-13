@@ -1,3 +1,35 @@
+/* Konkordia-Schriften – lokal eingebunden, keine externen Font-Dienste (DSGVO). */
+@font-face {
+  font-family: 'Gothic720';
+  src: url('/fonts/gothic720l.ttf') format('truetype');
+  font-weight: 300 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gothic720';
+  src: url('/fonts/gothic725b.ttf') format('truetype');
+  font-weight: 600 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Grotesque';
+  src: url('/fonts/GrotesqueRegSC.ttf') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans text-black bg-kk-grey-light antialiased;
+  }
+  h1, h2, h3 {
+    @apply font-heading font-normal tracking-wide;
+  }
+}

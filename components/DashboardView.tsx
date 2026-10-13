@@ -17,11 +17,11 @@ const StatCard: React.FC<{
   value: string | number;
   colorClass: string;
 }> = ({ icon, title, value, colorClass }) => (
-  <div className={`bg-white p-6 rounded-lg shadow flex items-center ${colorClass}`}>
+  <div className={`bg-white p-6 shadow-sm flex items-center ${colorClass}`}>
     <div className="mr-4">{icon}</div>
     <div>
       <p className="text-sm font-medium text-gray-500">{title}</p>
-      <p className="text-2xl font-bold text-gray-800">{value}</p>
+      <p className="text-3xl font-bold text-black">{value}</p>
     </div>
   </div>
 );
@@ -79,34 +79,34 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sermonPlans, syncLogs, on
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+      <h2 className="text-3xl text-brand">Dashboard</h2>
       
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard 
-          icon={<CalendarIcon className="w-8 h-8 text-blue-500" />}
+          icon={<CalendarIcon className="w-8 h-8 text-kk-teal-dark" />}
           title="Gottesdienste (Nächste 90 Tage)"
           value={stats.servicesInNext90Days}
-          colorClass="border-l-4 border-blue-500"
+          colorClass="border-l-8 border-kk-teal-dark"
         />
         <StatCard 
-          icon={<UserPlusIcon className="w-8 h-8 text-red-500" />}
+          icon={<UserPlusIcon className="w-8 h-8 text-brand" />}
           title="Offene Zuweisungen (90 Tage)"
           value={stats.unassignedInNext90Days}
-          colorClass="border-l-4 border-red-500"
+          colorClass="border-l-8 border-brand"
         />
         <StatCard 
-          icon={<UsersIcon className="w-8 h-8 text-green-500" />}
+          icon={<UsersIcon className="w-8 h-8 text-kk-olive" />}
           title="Aktive Prediger (Dieses Jahr)"
           value={stats.activePreachersThisYear}
-          colorClass="border-l-4 border-green-500"
+          colorClass="border-l-8 border-kk-olive"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Upcoming Services */}
         <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Nächste Gottesdienste</h3>
+          <h3 className="text-xl text-brand-dark mb-4 pb-2 border-b-2 border-brand/20">Nächste Gottesdienste</h3>
           {stats.upcomingServices.length > 0 ? (
             <ul className="space-y-4">
               {stats.upcomingServices.map(sermon => (
@@ -115,7 +115,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sermonPlans, syncLogs, on
                    <p className="text-sm text-gray-500 mb-1">{formatDate(sermon.date)}</p>
                    <p className="text-sm">
                         <span className="font-medium text-gray-600">Prediger: </span> 
-                        {sermon.preacher_name || <span className="text-red-500 font-semibold">Offen</span>}
+                        {sermon.preacher_name || <span className="text-brand font-semibold">Offen</span>}
                    </p>
                     <p className="text-sm">
                         <span className="font-medium text-gray-600">Thema: </span> 
@@ -133,10 +133,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sermonPlans, syncLogs, on
         <div className="space-y-6">
            {/* Last Sync */}
            <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Letzte Synchronisation</h3>
+                <h3 className="text-xl text-brand-dark mb-4 pb-2 border-b-2 border-brand/20">Letzte Synchronisation</h3>
                 {stats.lastSync ? (
                     <div>
-                        <p className={`flex items-center font-semibold mb-2 ${stats.lastSync.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                        <p className={`flex items-center font-semibold mb-2 ${stats.lastSync.status === 'success' ? 'text-kk-olive' : 'text-brand-dark'}`}>
                             {stats.lastSync.status === 'success' 
                                 ? <CheckCircleIcon className="w-5 h-5 mr-2" /> 
                                 : <ExclamationCircleIcon className="w-5 h-5 mr-2" />}
@@ -146,7 +146,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sermonPlans, syncLogs, on
                             {formatDateTime(stats.lastSync.synced_at)}
                         </p>
                         <p className="text-sm text-gray-600 mt-1">{stats.lastSync.message}</p>
-                        <button onClick={() => setView(View.SYNC_LOG)} className="text-sm text-blue-600 hover:underline mt-2">
+                        <button onClick={() => setView(View.SYNC_LOG)} className="text-sm text-brand hover:underline mt-2">
                           Protokoll ansehen
                         </button>
                     </div>
@@ -157,11 +157,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sermonPlans, syncLogs, on
 
            {/* Quick Access */}
            <div className="bg-white p-6 rounded-lg shadow">
-             <h3 className="text-lg font-semibold text-gray-800 mb-4">Schnellzugriff</h3>
+             <h3 className="text-xl text-brand-dark mb-4 pb-2 border-b-2 border-brand/20">Schnellzugriff</h3>
              <div className="space-y-3">
                <button
                   onClick={onNavigateToPlan}
-                  className="w-full flex items-center justify-center px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                  className="w-full flex items-center justify-center px-4 py-3 bg-kk-grey-dark text-white rounded-lg hover:bg-black transition-colors duration-200"
                 >
                   <DocumentTextIcon className="w-5 h-5 mr-2" />
                   Zum Predigtplan
@@ -169,7 +169,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ sermonPlans, syncLogs, on
                 <button
                   onClick={onSync}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors duration-200"
+                  className="w-full flex items-center justify-center px-4 py-3 bg-brand text-white rounded-lg hover:bg-brand-dark disabled:bg-brand-light transition-colors duration-200"
                 >
                   <SyncIcon className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                   {isLoading ? 'Synchronisiere...' : 'Events synchronisieren'}

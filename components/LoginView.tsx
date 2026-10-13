@@ -36,14 +36,18 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoggedIn }) => {
     }
   };
 
-  const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500';
+  const inputClass = 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white rounded-lg shadow-lg p-6 space-y-4">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">Predigtplaner</h1>
-          <p className="text-sm text-gray-500">Anmeldung mit dem ChurchTools-Konto</p>
+    <div className="min-h-screen flex items-center justify-center bg-kk-grey-light px-4">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white shadow-lg border-t-8 border-brand p-8 space-y-5">
+        <div className="text-center space-y-3">
+          <img src="/img/kreuzmarke.png" alt="" className="mx-auto w-16 h-16" />
+          <div>
+            <h1 className="text-2xl text-brand">Predigtplaner</h1>
+            <p className="text-xs text-kk-grey-dark tracking-widest uppercase">Gemeinde in der Konkordia</p>
+          </div>
+          <p className="text-sm text-kk-grey-dark">Anmeldung mit dem ChurchTools-Konto</p>
         </div>
         <div>
           <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Benutzername oder E-Mail</label>
@@ -62,9 +66,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLoggedIn }) => {
               value={totpCode} onChange={(e) => setTotpCode(e.target.value)} className={inputClass} />
           </div>
         )}
-        {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+        {error && <p className="text-sm text-brand-dark" role="alert">{error}</p>}
         <button type="submit" disabled={isSubmitting}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300">
+          className="w-full px-4 py-2 bg-brand text-white rounded-md hover:bg-brand-dark disabled:bg-brand-light">
           {isSubmitting ? 'Anmelden...' : 'Anmelden'}
         </button>
         <p className="text-xs text-gray-400">Es wird nur ein technisch notwendiges Sitzungs-Cookie gesetzt (12 Stunden gültig).</p>

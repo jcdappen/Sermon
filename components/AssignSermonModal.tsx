@@ -63,7 +63,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg m-4">
         <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-xl font-semibold text-gray-800">Prediger zuweisen</h3>
+          <h3 className="text-xl text-gray-800">Prediger zuweisen</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <XMarkIcon className="w-6 h-6" />
           </button>
@@ -93,7 +93,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                     value={preacherCategory}
                     onChange={(e) => setPreacherCategory(e.target.value)}
                     disabled={!preacherName.trim()}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     {PREACHER_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
@@ -107,7 +107,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                     id="status"
                     value={status}
                     onChange={(e) => setStatus(e.target.value as SermonPlan['status'])}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
                 >
                     <option value="assigned">Angefragt</option>
                     <option value="confirmed">Bestätigt</option>
@@ -123,7 +123,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                 value={series}
                 onChange={(e) => setSeries(e.target.value)}
                 placeholder="z.B. Grundlagen des Glaubens"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
               />
             </div>
             <div>
@@ -136,7 +136,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="z.B. Gnade und Vergebung"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
               />
             </div>
             
@@ -153,7 +153,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                         value={familyTime}
                         onChange={(e) => setFamilyTime(e.target.value)}
                         placeholder="Thema der Familytime"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
                       />
                     </div>
                     <div>
@@ -166,7 +166,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                         value={collection}
                         onChange={(e) => setCollection(e.target.value)}
                         placeholder="Zweck der Kollekte"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
                       />
                     </div>
                     <div>
@@ -179,7 +179,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                         value={communion}
                         onChange={(e) => setCommunion(e.target.value)}
                         placeholder="Name der verantwortlichen Person"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
                       />
                     </div>
                 </div>
@@ -195,7 +195,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
                 placeholder="z.B. Bibelstellen, wichtige Punkte"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand focus:border-brand"
               ></textarea>
             </div>
           </div>
@@ -209,7 +209,7 @@ const AssignSermonModal: React.FC<AssignSermonModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-brand text-white rounded-md hover:bg-brand-dark"
             >
               Speichern
             </button>

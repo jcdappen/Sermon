@@ -13,7 +13,7 @@ interface PeopleViewProps {
 const PeopleView: React.FC<PeopleViewProps> = ({ people }) => {
   return (
     <>
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Personen (Prediger)</h2>
+      <h2 className="text-3xl text-brand mb-4">Personen (Prediger)</h2>
       <p className="text-gray-600 mb-6">Diese Liste zeigt alle Personen, die im ausgewählten Jahr gepredigt haben.</p>
       
       {people.length === 0 ? (
