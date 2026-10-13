@@ -79,7 +79,7 @@ async function syncEvent(db, event, serviceId) {
   const firstLinkWithLocalPreacher = !row.ct_event_id && row.preacher_name && !ctPreacher.name;
   if (row.sync_status === 'pending' || row.sync_status === 'error' || firstLinkWithLocalPreacher) {
     try {
-      await pushPreacher(db, { ...row, ct_event_id: event.id, ct_event_service_id: es.id }, serviceId);
+      await pushPreacher(db, { ...row, ct_event_id: event.id, ct_event_service_id: es.id }, serviceId, es);
       return { status: 'pushed' };
     } catch (err) {
       await markSyncError(db, row.id, err.message);

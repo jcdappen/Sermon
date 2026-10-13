@@ -130,8 +130,11 @@ function findPreacherService(event, serviceId) {
   const services = event.eventServices ?? [];
   const matching = services.filter(s => eventServiceServiceId(s) === Number(serviceId));
   if (matching.length === 0) return null;
+  // Nur gültige Einträge sind die aktuelle Besetzung (abgelöste/abgesagte haben isValid=false).
+  const valid = matching.filter(s => s.isValid !== false);
+  const pool = valid.length ? valid : matching;
   // Bevorzugt einen bereits besetzten Eintrag, damit der eigentliche Prediger gefunden wird.
-  return matching.find(s => s.personId || s.name) ?? matching[0];
+  return pool.find(s => s.person || s.personId || s.name) ?? pool[0];
 }
 
 // Für Fehlermeldungen: die im Event vorhandenen Dienst-IDs (ohne Personendaten).
@@ -141,22 +144,53 @@ function listServiceIds(event) {
 }
 
 // Normalisiert die Prediger-Daten eines Event-Dienstes.
+// Verborgene Zuweisungen (person.icon "user-shield", wenn der Token-Benutzer die
+// Person nicht sehen darf) liefern nur einen Platzhalter – dessen ID ist laut
+// ChurchTools-Schema keine echte Personen-ID und wird daher nicht übernommen.
 function preacherFromService(es) {
-  if (!es) return { name: null, personId: null, agreed: false };
+  // Ungültige (abgelöste/abgesagte) Einträge zählen nicht als Besetzung.
+  if (!es || es.isValid === false) return { name: null, personId: null, agreed: false, concealed: false };
+  const concealed = es.person?.icon === 'user-shield';
   const name = (es.person?.title || es.name || '').trim() || null;
-  const rawPersonId = es.personId ?? es.person?.domainIdentifier ?? null;
+  const rawPersonId = concealed ? null : (es.personId ?? es.person?.domainIdentifier ?? null);
   const personId = rawPersonId !== null && !isNaN(Number(rawPersonId)) ? Number(rawPersonId) : null;
-  return { name, personId: name ? personId : null, agreed: Boolean(es.agreed) };
+  // "agreed" ist laut Schema veraltet; "isAccepted" hat Vorrang.
+  const agreed = Boolean(es.isAccepted ?? es.agreed);
+  return { name, personId: name ? personId : null, agreed, concealed: Boolean(name && concealed) };
 }
 
+// Pfade, unter denen ChurchTools einen Dienst-Eintrag ("service request")
+// aktualisiert. Je nach Version unterschiedlich – sie werden der Reihe nach
+// probiert, bis einer nicht mit 404/405 antwortet. Mit CT_SERVICE_REQUEST_PATH
+// (z. B. "/events/{eventId}/servicerequests/{id}") lässt sich der Pfad festlegen.
+const SERVICE_REQUEST_PATHS = [
+  '/events/{eventId}/servicerequests/{id}',
+  '/servicerequests/{id}',
+  '/events/{eventId}/services/{id}',
+];
+
+const INFORM_PERSON = ['1', 'true', 'ja', 'yes'].includes(String(process.env.CT_INFORM_PERSON || 'false').toLowerCase());
+
+// Body nach Schema "ServiceRequestUpdateFields": Person per personId (CT-Person)
+// oder name (Gast), dazu isAccepted und inform_person.
 async function setPreacherViaRest(eventId, eventServiceId, { name, personId, agreed }) {
-  return request('PUT', `/events/${eventId}/services/${eventServiceId}`, {
-    body: {
-      personId: personId ?? null,
-      name: personId ? null : (name || null),
-      agreed: Boolean(agreed),
-    },
-  });
+  const body = {
+    ...(personId ? { personId } : { name: name || null }),
+    isAccepted: Boolean(agreed),
+    inform_person: INFORM_PERSON,
+  };
+  const paths = process.env.CT_SERVICE_REQUEST_PATH ? [process.env.CT_SERVICE_REQUEST_PATH] : SERVICE_REQUEST_PATHS;
+  let lastError;
+  for (const template of paths) {
+    const path = template.replace('{eventId}', eventId).replace('{id}', eventServiceId);
+    try {
+      return await request('PUT', path, { body });
+    } catch (err) {
+      if (err.status !== 404 && err.status !== 405) throw err;
+      lastError = err;
+    }
+  }
+  throw lastError;
 }
 
 // Fallback für Instanzen ohne REST-Endpunkt: Legacy-AJAX "churchservice/ajax".
@@ -189,14 +223,22 @@ async function setPreacherViaAjax(eventServiceId, { name, personId, agreed }) {
 
 // Schreibt den Prediger in den Dienst des Events.
 // CT_SERVICE_WRITE_MODE: "auto" (Standard: REST, bei 404/405 AJAX), "rest" oder "ajax".
+// Rückgabe: ID des (ggf. neu angelegten) Dienst-Eintrags – laut ChurchTools kann
+// eine Änderung einen neuen Eintrag erzeugen.
 async function setPreacher(eventId, eventServiceId, preacher) {
   const mode = (process.env.CT_SERVICE_WRITE_MODE || 'auto').toLowerCase();
-  if (mode === 'ajax') return setPreacherViaAjax(eventServiceId, preacher);
+  if (mode === 'ajax') {
+    await setPreacherViaAjax(eventServiceId, preacher);
+    return eventServiceId;
+  }
   try {
-    return await setPreacherViaRest(eventId, eventServiceId, preacher);
+    const res = await setPreacherViaRest(eventId, eventServiceId, preacher);
+    const newId = Number(res?.data?.id ?? res?.id);
+    return Number.isInteger(newId) && newId > 0 ? newId : eventServiceId;
   } catch (err) {
     if (mode === 'auto' && (err.status === 404 || err.status === 405)) {
-      return setPreacherViaAjax(eventServiceId, preacher);
+      await setPreacherViaAjax(eventServiceId, preacher);
+      return eventServiceId;
     }
     throw err;
   }
