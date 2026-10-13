@@ -7,6 +7,7 @@ export interface SermonPlan {
   start_time: string;
   end_time: string;
   preacher_name: string | null;
+  preacher_person_id: number | null;
   preacher_category: string | null;
   theme_series: string | null;
   theme_topic: string | null;
@@ -16,6 +17,9 @@ export interface SermonPlan {
   communion_responsible: string | null;
   status: 'planned' | 'assigned' | 'confirmed' | 'completed';
   sync_status: 'synced' | 'pending' | 'error';
+  sync_error: string | null;
+  ct_event_id: number | null;
+  ct_event_service_id: number | null;
   last_synced: string;
   created_at: string;
   updated_at: string;
@@ -29,6 +33,11 @@ export interface SyncLog {
   events_count: number;
   error_details: object | null;
   synced_at: string;
+}
+
+export interface PersonSearchResult {
+  id: number;
+  name: string;
 }
 
 export interface PreacherStat {

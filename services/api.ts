@@ -1,4 +1,4 @@
-import { SermonPlan, SyncLog } from '../types';
+import { SermonPlan, SyncLog, PersonSearchResult } from '../types';
 
 // Helper interface for the standardized API response
 interface ApiResponse<T> {
@@ -62,6 +62,7 @@ export const assignPreacher = async (
   eventUid: string,
   sermonDetails: { 
     preacherName: string;
+    preacherPersonId: number | null;
     series: string; 
     topic: string; 
     notes: string; 
@@ -71,8 +72,8 @@ export const assignPreacher = async (
     status: SermonPlan['status'];
     preacherCategory: string;
   }
-): Promise<{ message: string }> => {
-  return await apiRequest<{ message: string }>('assign-preacher', {
+): Promise<{ message: string; ctSynced?: boolean }> => {
+  return await apiRequest<{ message: string; ctSynced?: boolean }>('assign-preacher', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -80,6 +81,10 @@ export const assignPreacher = async (
       sermonDetails
     }),
   });
+};
+
+export const searchPersons = async (query: string): Promise<PersonSearchResult[]> => {
+  return await apiRequest<PersonSearchResult[]>(`search-persons?q=${encodeURIComponent(query)}`) || [];
 };
 
 export const setupDatabase = async (): Promise<{ message: string }> => {

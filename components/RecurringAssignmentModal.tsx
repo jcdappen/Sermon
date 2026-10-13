@@ -1,11 +1,13 @@
 
 import React, { useState } from 'react';
 import { XMarkIcon } from './icons/Icons';
+import PreacherInput from './PreacherInput';
 
 interface RecurringAssignmentModalProps {
   onClose: () => void;
   onSave: (details: {
     preacherName: string;
+    preacherPersonId: number | null;
     preacherCategory: string;
     series: string;
     topic: string;
@@ -34,6 +36,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
   onSave,
 }) => {
   const [preacherName, setPreacherName] = useState('');
+  const [preacherPersonId, setPreacherPersonId] = useState<number | null>(null);
   const [preacherCategory, setPreacherCategory] = useState('Gemeinde');
   const [series, setSeries] = useState('');
   const [topic, setTopic] = useState('');
@@ -65,6 +68,7 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
     }
     onSave({
       preacherName,
+      preacherPersonId,
       preacherCategory,
       series,
       topic,
@@ -94,13 +98,14 @@ const RecurringAssignmentModal: React.FC<RecurringAssignmentModalProps> = ({
                   <label htmlFor="preacher" className="block text-sm font-medium text-gray-700 mb-1">
                     Prediger (optional)
                   </label>
-                  <input
-                    type="text"
-                    id="preacher"
-                    value={preacherName}
-                    onChange={(e) => setPreacherName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  <PreacherInput
+                    name={preacherName}
+                    personId={preacherPersonId}
                     placeholder="Name des Predigers"
+                    onChange={(name, personId) => {
+                      setPreacherName(name);
+                      setPreacherPersonId(personId);
+                    }}
                   />
                 </div>
                 <div>
