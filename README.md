@@ -42,7 +42,7 @@ Der Token-Benutzer braucht in ChurchTools Rechte zum Sehen des Gottesdienst-Kale
 
 ### Ablauf
 
-1. Nach dem Deploy einmal **„Datenbank jetzt einrichten“** ausführen (legt die neuen Spalten `ct_event_id`, `ct_event_service_id`, `preacher_person_id`, `sync_error` an).
+1. Die neuen Spalten `ct_event_id`, `ct_event_service_id`, `preacher_person_id`, `sync_error` werden beim ersten Synchronisieren bzw. Zuweisen automatisch angelegt – kein manueller Schritt nötig.
 2. **„Events synchronisieren“**:
    - Events des Gottesdienst-Kalenders werden geladen (`event_uid = ct-<EventID>`).
    - Bisherige iCal-Einträge mit gleicher Startzeit werden übernommen – Serie, Thema, Kollekte, Familytime, Abendmahl und Notizen bleiben erhalten.

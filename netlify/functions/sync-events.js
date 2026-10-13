@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const ct = require('./lib/churchtools');
 const { pushPreacher, markSyncError } = require('./lib/preacher-sync');
+const { ensureChurchToolsColumns } = require('./lib/schema');
 
 // YYYY-MM-DD in deutscher Zeitzone (vermeidet Datumsverschiebung durch UTC).
 const toBerlinDate = (date) =>
@@ -136,6 +137,8 @@ exports.handler = async (event, context) => {
     pool = new Pool({
       connectionString: process.env.NETLIFY_DATABASE_URL,
     });
+
+    await ensureChurchToolsColumns(pool);
 
     const { calendarId, serviceId } = await ct.resolveIds();
 
