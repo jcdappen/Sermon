@@ -57,21 +57,6 @@ async function request(method, endpoint, { params = {}, body } = {}) {
 
 const apiGet = (endpoint, params) => request('GET', endpoint, { params });
 
-async function getAllPages(endpoint, params = {}) {
-  const results = [];
-  let page = 1;
-  while (true) {
-    const data = await apiGet(endpoint, { ...params, page, limit: 100 });
-    const items = data?.data ?? data;
-    if (!Array.isArray(items) || items.length === 0) break;
-    results.push(...items);
-    const meta = data?.meta?.pagination;
-    if (!meta || page >= meta.lastPage) break;
-    page++;
-  }
-  return results;
-}
-
 // Sucht per Name: zuerst exakt, dann "enthält" (z. B. "Predigt" für "Prediger"
 // über den Wortstamm). Bei Fehlschlag werden die vorhandenen Namen mit ID genannt,
 // damit die passende ID per Umgebungsvariable gesetzt werden kann.
@@ -123,16 +108,14 @@ function eventCalendarId(event) {
 
 // Alle Events des Gottesdienst-Kalenders im Zeitraum, inkl. Dienste.
 async function getServiceEvents(calendarId, from, to) {
-  const events = await getAllPages('/events', {
-    from,
-    to,
-    'include[]': ['eventServices'],
-  });
+  // /events ist nicht paginiert; "include" erwartet einen einfachen String.
+  const res = await apiGet('/events', { from, to, include: 'eventServices' });
+  const events = res?.data ?? [];
   return events.filter(e => eventCalendarId(e) === calendarId && !e.isCanceled);
 }
 
 async function getEvent(eventId) {
-  const res = await apiGet(`/events/${eventId}`, { 'include[]': ['eventServices'] });
+  const res = await apiGet(`/events/${eventId}`, { include: 'eventServices' });
   return res?.data ?? res;
 }
 
