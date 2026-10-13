@@ -29,7 +29,7 @@ Der Predigtplaner lädt die Gottesdienste direkt über die ChurchTools-API (glei
 |---|---|---|
 | `NETLIFY_DATABASE_URL` | ja | Postgres-Verbindung (wie bisher) |
 | `CHURCHTOOLS_API_TOKEN` | ja | Login-Token eines ChurchTools-Benutzers (Header `Authorization: Login …`). Alternativ wird `CHURCHTOOLS_TOKEN` akzeptiert. |
-| `CT_BASE_URL` | nein | Standard: `https://gemeindekonkordia.church.tools` |
+| `CHURCHTOOLS_BASE_URL` (oder `CT_BASE_URL`) | nein | Standard: `https://gemeindekonkordia.church.tools` (mit oder ohne `/api`) |
 | `CT_CALENDAR_ID` / `CT_CALENDAR_NAME` | nein | Kalender der Gottesdienste; Standard: Suche nach Name „Gottesdienst“ |
 | `CT_PREACHER_SERVICE_ID` / `CT_PREACHER_SERVICE_NAME` | nein | Dienst des Predigers; Standard: Suche nach Name „Prediger“ |
 | `CT_SYNC_MONTHS` | nein | Wie viele Monate im Voraus synchronisiert werden (Standard: 12, plus 30 Tage rückwirkend) |

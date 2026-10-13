@@ -4,7 +4,11 @@
 // Token aus CHURCHTOOLS_API_TOKEN (bestehende Netlify-Variable) oder CHURCHTOOLS_TOKEN.
 // Der Token bleibt ausschließlich serverseitig (Netlify-Umgebungsvariable).
 
-const BASE_URL = (process.env.CT_BASE_URL || 'https://gemeindekonkordia.church.tools').replace(/\/+$/, '');
+// Basis-URL ohne abschließendes "/" bzw. "/api" (CHURCHTOOLS_BASE_URL ist bereits in Netlify hinterlegt).
+const BASE_URL = (process.env.CT_BASE_URL || process.env.CHURCHTOOLS_BASE_URL || 'https://gemeindekonkordia.church.tools')
+  .trim()
+  .replace(/\/+$/, '')
+  .replace(/\/api$/, '');
 const API_BASE = `${BASE_URL}/api`;
 
 const CALENDAR_NAME = process.env.CT_CALENDAR_NAME || 'Gottesdienst';
