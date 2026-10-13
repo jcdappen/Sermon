@@ -94,13 +94,13 @@ async function syncEvent(db, event, serviceId) {
     SET preacher_name = $1,
         preacher_person_id = $2,
         status = $3,
-        preacher_category = CASE WHEN $1::text IS NULL THEN NULL ELSE preacher_category END,
+        preacher_category = CASE WHEN $6 THEN NULL ELSE preacher_category END,
         sync_status = 'synced',
         sync_error = NULL,
         last_synced = NOW(),
         updated_at = CASE WHEN $4 THEN NOW() ELSE updated_at END
     WHERE id = $5
-  `, [ctPreacher.name, ctPreacher.personId, statusFromPreacher(ctPreacher, row.status), preacherChanged, row.id]);
+  `, [ctPreacher.name, ctPreacher.personId, statusFromPreacher(ctPreacher, row.status), preacherChanged, row.id, !ctPreacher.name]);
   return { status: 'pulled' };
 }
 
