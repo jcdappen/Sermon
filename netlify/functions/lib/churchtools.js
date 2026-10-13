@@ -130,8 +130,11 @@ function findPreacherService(event, serviceId) {
   const services = event.eventServices ?? [];
   const matching = services.filter(s => eventServiceServiceId(s) === Number(serviceId));
   if (matching.length === 0) return null;
+  // Nur gültige Einträge sind die aktuelle Besetzung (abgelöste/abgesagte haben isValid=false).
+  const valid = matching.filter(s => s.isValid !== false);
+  const pool = valid.length ? valid : matching;
   // Bevorzugt einen bereits besetzten Eintrag, damit der eigentliche Prediger gefunden wird.
-  return matching.find(s => s.personId || s.name) ?? matching[0];
+  return pool.find(s => s.person || s.personId || s.name) ?? pool[0];
 }
 
 // Für Fehlermeldungen: die im Event vorhandenen Dienst-IDs (ohne Personendaten).
@@ -145,7 +148,8 @@ function listServiceIds(event) {
 // Person nicht sehen darf) liefern nur einen Platzhalter – dessen ID ist laut
 // ChurchTools-Schema keine echte Personen-ID und wird daher nicht übernommen.
 function preacherFromService(es) {
-  if (!es) return { name: null, personId: null, agreed: false, concealed: false };
+  // Ungültige (abgelöste/abgesagte) Einträge zählen nicht als Besetzung.
+  if (!es || es.isValid === false) return { name: null, personId: null, agreed: false, concealed: false };
   const concealed = es.person?.icon === 'user-shield';
   const name = (es.person?.title || es.name || '').trim() || null;
   const rawPersonId = concealed ? null : (es.personId ?? es.person?.domainIdentifier ?? null);
