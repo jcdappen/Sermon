@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 const ct = require('./lib/churchtools');
-const { pushPreacher, markSyncError, markPushError, PUSH_ERROR_PREFIX } = require('./lib/preacher-sync');
+const { pushPreacher, markPushError, PUSH_ERROR_PREFIX } = require('./lib/preacher-sync');
 const { ensureChurchToolsColumns } = require('./lib/schema');
 
 // YYYY-MM-DD in deutscher Zeitzone (vermeidet Datumsverschiebung durch UTC).
@@ -13,35 +13,69 @@ const statusFromPreacher = ({ name, agreed }, currentStatus) => {
   return agreed ? 'confirmed' : 'assigned';
 };
 
+// Spalten, die zusätzlich in vergleichbarer Textform geladen werden, damit nur
+// bei echten Änderungen geschrieben wird (DATE/TIMESTAMPTZ kommen sonst als Date-Objekte).
+const ROW_SELECT = `
+  SELECT *, date::text AS _date,
+         (extract(epoch FROM start_time) * 1000)::bigint AS _start_ms,
+         (extract(epoch FROM end_time) * 1000)::bigint AS _end_ms
+  FROM sermon_plans`;
+
+const COMPARE = {
+  date: row => row._date,
+  start_time: row => Number(row._start_ms),
+  end_time: row => Number(row._end_ms),
+};
+const comparable = (key, value) => (key === 'start_time' || key === 'end_time') ? new Date(value).getTime() : (value ?? null);
+
+// Schreibt nur geänderte Spalten (eine Abfrage oder keine).
+async function updateChanged(db, row, desired) {
+  const changes = Object.entries(desired).filter(([key, value]) => {
+    const current = COMPARE[key] ? COMPARE[key](row) : (row[key] ?? null);
+    return current !== comparable(key, value);
+  });
+  if (changes.length === 0) return false;
+  const sets = changes.map(([key], i) => `${key} = $${i + 1}`);
+  await db.query(
+    `UPDATE sermon_plans SET ${sets.join(', ')}, last_synced = NOW() WHERE id = $${changes.length + 1}`,
+    [...changes.map(([, value]) => value), row.id]
+  );
+  return true;
+}
+
+// Alte (iCal-)Zeile zum selben Termin finden: gleiche Startzeit, sonst gleicher Tag
+// (nächstgelegene Uhrzeit). Die Zeile wird "verbraucht", damit sie nur einmal zugeordnet wird.
+function claimOldRow(ctx, start) {
+  const day = toBerlinDate(start);
+  let best = null;
+  for (const row of ctx.oldRows) {
+    if (row._date !== day && Number(row._start_ms) !== start.getTime()) continue;
+    const diff = Math.abs(Number(row._start_ms) - start.getTime());
+    if (!best || diff < best.diff) best = { row, diff };
+  }
+  if (!best) return null;
+  ctx.oldRows.splice(ctx.oldRows.indexOf(best.row), 1);
+  return best.row;
+}
+
 // Synchronisiert ein einzelnes ChurchTools-Event mit der Datenbank.
+// ctx: { byUid: Map(event_uid → Zeile), oldRows: alte Nicht-CT-Zeilen, now: Date }
 // Rückgabe: { status: 'pulled' | 'pushed' | 'error', error?: string }
-async function syncEvent(db, event, serviceId) {
+async function syncEvent(db, event, serviceId, ctx) {
   const eventUid = `ct-${event.id}`;
   const start = new Date(event.startDate);
   const end = new Date(event.endDate || event.startDate);
+  const isPast = start < ctx.now;
   const title = event.name || 'Unbenannter Gottesdienst';
   const es = ct.findPreacherService(event, serviceId);
   const ctPreacher = ct.preacherFromService(es);
   const noServiceError = `Kein Dienst "Predigt" (ID ${serviceId}) im ChurchTools-Event. Vorhandene Dienst-IDs: ${ct.listServiceIds(event)}`;
 
-  // Bestehende (iCal-)Zeile zum gleichen Termin übernehmen, damit lokale
-  // Angaben wie Serie, Thema, Kollekte oder Notizen erhalten bleiben.
-  let { rows } = await db.query('SELECT * FROM sermon_plans WHERE event_uid = $1', [eventUid]);
-  if (rows.length === 0) {
-    ({ rows } = await db.query(`
-      UPDATE sermon_plans SET event_uid = $1
-      WHERE id = (
-        SELECT id FROM sermon_plans
-        WHERE event_uid NOT LIKE 'ct-%'
-          AND (start_time = $2::timestamptz OR date = $3::date)
-        ORDER BY abs(extract(epoch FROM start_time - $2::timestamptz)), id
-        LIMIT 1
-      )
-      RETURNING *
-    `, [eventUid, start.toISOString(), toBerlinDate(start)]));
-  }
+  // Bestehende Zeile – oder eine alte (iCal-)Zeile zum gleichen Termin übernehmen,
+  // damit lokale Angaben wie Serie, Thema, Kollekte oder Notizen erhalten bleiben.
+  const row = ctx.byUid.get(eventUid) || claimOldRow(ctx, start);
 
-  if (rows.length === 0) {
+  if (!row) {
     await db.query(`
       INSERT INTO sermon_plans (
         event_uid, date, title, location, start_time, end_time,
@@ -60,29 +94,32 @@ async function syncEvent(db, event, serviceId) {
     return es ? { status: 'pulled' } : { status: 'error', error: noServiceError };
   }
 
-  const row = rows[0];
-
   // Termindaten kommen immer aus ChurchTools.
-  await db.query(`
-    UPDATE sermon_plans
-    SET date = $1, title = $2, start_time = $3, end_time = $4,
-        ct_event_id = $5, ct_event_service_id = $6
-    WHERE id = $7
-  `, [toBerlinDate(start), title, start.toISOString(), end.toISOString(), event.id, es?.id ?? null, row.id]);
+  const base = {
+    event_uid: eventUid,
+    date: toBerlinDate(start),
+    title,
+    start_time: start.toISOString(),
+    end_time: end.toISOString(),
+    ct_event_id: event.id,
+    ct_event_service_id: es?.id ?? null,
+  };
 
   if (!es) {
-    await markSyncError(db, row.id, noServiceError);
+    await updateChanged(db, row, { ...base, sync_status: 'error', sync_error: noServiceError });
     return { status: 'error', error: noServiceError };
   }
 
-  // Lokale, noch nicht übertragene Änderung → nach ChurchTools schreiben.
+  // Lokale, noch nicht übertragene Änderung → nach ChurchTools schreiben (nur für
+  // kommende Gottesdienste – vergangene werden in ChurchTools nie verändert).
   // Beim ersten Abgleich einer übernommenen (iCal-)Zeile gilt ein lokal
   // eingetragener Prediger ebenfalls als ausstehend, solange CT leer ist.
   const firstLinkWithLocalPreacher = !row.ct_event_id && row.preacher_name && !ctPreacher.name;
   // Fehlgeschlagene Übertragungen werden wiederholt; andere Fehler (z. B. fehlender
   // Dienst) nie – sonst könnte ein leerer lokaler Stand den Prediger in CT löschen.
   const retryFailedPush = row.sync_status === 'error' && String(row.sync_error || '').startsWith(PUSH_ERROR_PREFIX);
-  if (row.sync_status === 'pending' || retryFailedPush || firstLinkWithLocalPreacher) {
+  if (!isPast && (row.sync_status === 'pending' || retryFailedPush || firstLinkWithLocalPreacher)) {
+    await updateChanged(db, row, base);
     try {
       await pushPreacher(db, { ...row, ct_event_id: event.id, ct_event_service_id: es.id }, serviceId, es);
       return { status: 'pushed' };
@@ -92,20 +129,24 @@ async function syncEvent(db, event, serviceId) {
     }
   }
 
+  // Vergangener Gottesdienst ohne Eintrag in ChurchTools: lokal erfassten Prediger behalten.
+  if (isPast && !ctPreacher.name && row.preacher_name) {
+    await updateChanged(db, row, { ...base, sync_status: 'synced', sync_error: null });
+    return { status: 'pulled' };
+  }
+
   // Sonst ist ChurchTools führend für den Prediger.
   const preacherChanged = (row.preacher_name || null) !== ctPreacher.name;
-  await db.query(`
-    UPDATE sermon_plans
-    SET preacher_name = $1,
-        preacher_person_id = $2,
-        status = $3,
-        preacher_category = CASE WHEN $6 THEN NULL ELSE preacher_category END,
-        sync_status = 'synced',
-        sync_error = NULL,
-        last_synced = NOW(),
-        updated_at = CASE WHEN $4 THEN NOW() ELSE updated_at END
-    WHERE id = $5
-  `, [ctPreacher.name, ctPreacher.personId, statusFromPreacher(ctPreacher, row.status), preacherChanged, row.id, !ctPreacher.name]);
+  await updateChanged(db, row, {
+    ...base,
+    preacher_name: ctPreacher.name,
+    preacher_person_id: ctPreacher.personId,
+    status: statusFromPreacher(ctPreacher, row.status),
+    preacher_category: ctPreacher.name ? (row.preacher_category ?? null) : null,
+    sync_status: 'synced',
+    sync_error: null,
+    ...(preacherChanged ? { updated_at: new Date().toISOString() } : {}),
+  });
   return { status: 'pulled' };
 }
 
@@ -113,7 +154,8 @@ async function syncEvent(db, event, serviceId) {
 // ChurchTools-Zeile vom selben Tag zusammen: lokale Angaben (Serie, Thema, Notizen,
 // Familytime, Kollekte, Abendmahl, Kategorie) werden übernommen, wo die CT-Zeile
 // leer ist; ein lokaler Prediger nur, wenn in ChurchTools niemand eingetragen ist
-// (er wird dann beim nächsten Sync übertragen). Danach wird die alte Zeile entfernt.
+// (bei kommenden Terminen wird er beim nächsten Sync übertragen, vergangene bleiben
+// nur lokal). Danach wird die alte Zeile entfernt.
 async function mergeLeftoverRows(db, fromDate, toDate) {
   const { rows: leftovers } = await db.query(`
     SELECT * FROM sermon_plans
@@ -148,9 +190,10 @@ async function mergeLeftoverRows(db, fromDate, toDate) {
       if (takePreacher) {
         await client.query(`
           UPDATE sermon_plans
-          SET preacher_name = $1, preacher_person_id = $2, status = $3, sync_status = 'pending', updated_at = NOW()
-          WHERE id = $4
-        `, [old.preacher_name, old.preacher_person_id ?? null, old.status, target.id]);
+          SET preacher_name = $1, preacher_person_id = $2, status = $3, sync_status = $4, updated_at = NOW()
+          WHERE id = $5
+        `, [old.preacher_name, old.preacher_person_id ?? null, old.status,
+            new Date(target.start_time) < new Date() ? 'synced' : 'pending', target.id]);
       }
       await client.query('DELETE FROM sermon_plans WHERE id = $1', [old.id]);
       await client.query('COMMIT');
@@ -178,6 +221,9 @@ function preacherStats(events, serviceId) {
   }
   return stats;
 }
+
+const formatDe = (date) =>
+  new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
 
 // Häufigste Fehlergründe (max. 3, gekürzt) für Protokoll und Hinweis im Frontend.
 function summarizeFailures(failures) {
@@ -232,21 +278,33 @@ exports.handler = async (event, context) => {
 
     const { calendarId, serviceId } = await ct.resolveIds();
 
+    // Zeitraum: ab 1. Januar des Vorjahres (CT_SYNC_FROM, YYYY-MM-DD) bis
+    // heute + CT_SYNC_MONTHS (Standard 12). Vergangenes wird nur gelesen.
+    const now = new Date();
     const months = parseInt(process.env.CT_SYNC_MONTHS, 10) || 12;
-    const from = new Date();
-    from.setDate(from.getDate() - 30);
-    const to = new Date();
+    const fromEnv = /^\d{4}-\d{2}-\d{2}$/.test(process.env.CT_SYNC_FROM || '') ? process.env.CT_SYNC_FROM : null;
+    const from = fromEnv ? new Date(`${fromEnv}T00:00:00Z`) : new Date(Date.UTC(now.getUTCFullYear() - 1, 0, 1));
+    const to = new Date(now);
     to.setMonth(to.getMonth() + months);
 
     const events = await ct.getServiceEvents(calendarId, toBerlinDate(from), toBerlinDate(to));
     await ct.fillMissingPersonNames(events, serviceId);
     const stats = preacherStats(events, serviceId);
 
+    // Bestehende Zeilen einmalig laden (statt mehrerer Abfragen pro Event).
+    const uids = events.map(e => `ct-${e.id}`);
+    const { rows: ctRows } = await pool.query(`${ROW_SELECT} WHERE event_uid = ANY($1::text[])`, [uids]);
+    const { rows: oldRows } = await pool.query(
+      `${ROW_SELECT} WHERE event_uid NOT LIKE 'ct-%' AND date BETWEEN $1::date AND $2::date`,
+      [toBerlinDate(from), toBerlinDate(to)]
+    );
+    const ctx = { byUid: new Map(ctRows.map(r => [r.event_uid, r])), oldRows, now };
+
     const counts = { pulled: 0, pushed: 0, error: 0 };
     const failures = [];
     for (const ctEvent of events) {
       try {
-        const result = await syncEvent(pool, ctEvent, serviceId);
+        const result = await syncEvent(pool, ctEvent, serviceId, ctx);
         counts[result.status]++;
         if (result.error) failures.push({ eventId: ctEvent.id, error: result.error });
       } catch (err) {
@@ -259,7 +317,7 @@ exports.handler = async (event, context) => {
     const merged = await mergeLeftoverRows(pool, toBerlinDate(from), toBerlinDate(to));
 
     const synced = counts.pulled + counts.pushed;
-    let message = `${synced} Gottesdienste mit ChurchTools synchronisiert (${counts.pushed} Prediger nach ChurchTools übertragen)` +
+    let message = `${synced} Gottesdienste mit ChurchTools synchronisiert (${formatDe(from)} – ${formatDe(to)}; ${counts.pushed} Prediger nach ChurchTools übertragen)` +
       ` – Dienst "Predigt" in ChurchTools: ${stats.named} besetzt, ${stats.concealed} verborgen, ${stats.open} offen` +
       (stats.noService ? `, ${stats.noService} ohne Dienst` : '') +
       (merged ? ` – ${merged} alte Einträge zusammengeführt` : '') +
