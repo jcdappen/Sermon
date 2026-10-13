@@ -1,6 +1,6 @@
 const { Pool } = require('pg');
 const ct = require('./lib/churchtools');
-const { pushPreacher, markSyncError } = require('./lib/preacher-sync');
+const { pushPreacher, markPushError } = require('./lib/preacher-sync');
 const { ensureChurchToolsColumns } = require('./lib/schema');
 
 exports.handler = async (event, context) => {
@@ -110,7 +110,7 @@ exports.handler = async (event, context) => {
         }
       } catch (ctError) {
         console.error('ChurchTools push error:', ctError);
-        await markSyncError(pool, rows[0].id, ctError.message);
+        await markPushError(pool, rows[0].id, ctError.message);
         ctMessage = ` (ChurchTools-Fehler: ${ctError.message})`;
         logStatus = 'error';
       }

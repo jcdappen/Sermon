@@ -261,7 +261,7 @@ const App = () => {
           return;
       }
       
-      const confirmationMessage = `Wollen Sie wirklich ${sermonsToUpdate.length} Gottesdienste aktualisieren? Leere Felder in diesem Formular überschreiben bestehende Werte (z.B. Prediger, Thema, Kollekte, Abendmahl).`;
+      const confirmationMessage = `Wollen Sie wirklich ${sermonsToUpdate.length} Gottesdienste aktualisieren? Leere Felder in diesem Formular überschreiben bestehende Werte (z.B. Thema, Kollekte, Abendmahl). Ein leeres Prediger-Feld lässt den bestehenden Prediger unverändert.`;
 
       const confirmed = confirm(confirmationMessage);
       if(!confirmed) return;
@@ -272,9 +272,11 @@ const App = () => {
           for(const sermon of sermonsToUpdate) {
              const isAssigningPreacher = details.preacherName.trim() !== '';
 
+             // Leeres Prediger-Feld lässt den bestehenden Prediger unverändert
+             // (sonst würde er auch in ChurchTools entfernt).
              await api.assignPreacher(sermon.event_uid, {
-                 preacherName: details.preacherName,
-                 preacherPersonId: isAssigningPreacher ? details.preacherPersonId : null,
+                 preacherName: isAssigningPreacher ? details.preacherName : (sermon.preacher_name || ''),
+                 preacherPersonId: isAssigningPreacher ? details.preacherPersonId : sermon.preacher_person_id,
                  series: details.series,
                  topic: details.topic,
                  notes: sermon.sermon_notes || '',
@@ -282,7 +284,7 @@ const App = () => {
                  collection: details.collection,
                  communion: details.communion,
                  status: isAssigningPreacher ? 'assigned' : sermon.status,
-                 preacherCategory: isAssigningPreacher ? details.preacherCategory : '',
+                 preacherCategory: isAssigningPreacher ? details.preacherCategory : (sermon.preacher_category || ''),
              });
           }
           await fetchData();
