@@ -340,7 +340,7 @@ const App = () => {
   }> = ({ onClick, isActive, icon, label }) => (
     <button
       onClick={onClick}
-      className={`flex items-center w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+      className={`flex items-center shrink-0 whitespace-nowrap md:w-full px-3 md:px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
         isActive
           ? 'bg-brand text-white'
           : 'text-kk-grey-dark hover:bg-brand/5 hover:text-brand'
@@ -425,22 +425,25 @@ const App = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
-      <aside className="w-64 bg-white shadow-md flex flex-col border-t-4 border-brand">
-        <div className="p-5 border-b flex items-center gap-3">
+    <div className="flex flex-col md:flex-row h-screen bg-gray-100 font-sans">
+      <aside className="w-full md:w-64 shrink-0 bg-white shadow-md flex flex-col border-t-4 border-brand">
+        <div className="px-4 py-3 md:p-5 border-b flex items-center gap-3">
           <img src="/img/kreuzmarke.png" alt="" className="w-11 h-11 object-contain" />
           <div className="min-w-0">
             <h1 className="text-lg text-brand leading-tight tracking-normal">Predigtplaner</h1>
             <p className="text-xs text-kk-grey-dark">Gemeinde in der Konkordia</p>
           </div>
+          <button onClick={handleLogout} className="md:hidden ml-auto text-sm text-kk-grey-dark hover:text-brand">
+            Abmelden
+          </button>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="md:flex-1 flex md:block gap-1 overflow-x-auto p-2 md:p-4 md:space-y-2">
            <NavItem onClick={() => setView(View.DASHBOARD)} isActive={view === View.DASHBOARD} icon={<HomeIcon className="w-5 h-5" />} label="Dashboard" />
            <NavItem onClick={() => setView(View.SYNC_LOG)} isActive={view === View.SYNC_LOG} icon={<SyncIcon className="w-5 h-5" />} label="Sync Protokoll" />
            
-           <div className="pt-4 mt-2 border-t">
-                <h3 className="px-4 text-xs text-gray-500 uppercase tracking-wider mb-2">Jahresübersicht</h3>
-                <div className="space-y-1">
+           <div className="flex md:block gap-1 md:pt-4 md:mt-2 md:border-t">
+                <h3 className="hidden md:block px-4 text-xs text-gray-500 uppercase tracking-wider mb-2">Jahresübersicht</h3>
+                <div className="flex md:block gap-1 md:space-y-1">
                     {uniqueYears.map(year => (
                         <NavItem 
                             key={year}
@@ -453,7 +456,7 @@ const App = () => {
                 </div>
            </div>
         </nav>
-        <div className="p-4 border-t">
+        <div className="hidden md:block p-4 border-t">
           <button
             onClick={handleLogout}
             className="w-full px-4 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-200"
@@ -462,7 +465,7 @@ const App = () => {
           </button>
         </div>
       </aside>
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-3 md:p-6 overflow-auto">
         {renderView()}
       </main>
 

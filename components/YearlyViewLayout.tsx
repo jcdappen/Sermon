@@ -1,7 +1,7 @@
 import React from 'react';
 import { SermonPlan } from '../types';
 import { YearlyViewType } from '../App';
-import SermonPlanView from './SermonPlanView';
+import YearCalendarView from './YearCalendarView';
 import StatisticsView from './StatisticsView';
 import PeopleView from './PeopleView';
 
@@ -45,7 +45,7 @@ const YearlyViewLayout: React.FC<YearlyViewLayoutProps> = ({
   const renderActiveView = () => {
     switch (activeView) {
       case 'plan':
-        return <SermonPlanView sermonPlans={sermonPlans} {...rest} />;
+        return <YearCalendarView year={year} sermonPlans={sermonPlans} {...rest} />;
       case 'stats':
         return <StatisticsView sermonPlans={sermonPlans} />;
       case 'people':
@@ -56,9 +56,9 @@ const YearlyViewLayout: React.FC<YearlyViewLayoutProps> = ({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
+    <div className="bg-white p-4 md:p-6 rounded-lg shadow-lg">
       <div className="flex justify-between items-center mb-6 border-b pb-4 gap-4 flex-wrap">
-        <h2 className="text-3xl text-brand">Jahresübersicht {year}</h2>
+        <h2 className="text-2xl md:text-3xl text-brand">Jahresübersicht {year}</h2>
         <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
             <TabButton label="Predigtplan" isActive={activeView === 'plan'} onClick={() => onViewChange('plan')} />
             <TabButton label="Statistiken" isActive={activeView === 'stats'} onClick={() => onViewChange('stats')} />
