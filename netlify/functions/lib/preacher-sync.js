@@ -3,26 +3,42 @@
 
 const ct = require('./churchtools');
 
-async function pushPreacher(db, row, serviceId) {
+const sameName = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
+
+// Prüft, ob ChurchTools bereits den gewünschten Stand hat. Eine verborgene
+// Zuweisung mit gleichem Anzeigenamen gilt als unverändert, damit die echte
+// (für den Token-Benutzer unsichtbare) Person nie durch den Platzhalter ersetzt wird.
+function isUnchanged(current, wanted) {
+  if (!sameName(current.name, wanted.name)) return false;
+  if (!wanted.name || current.concealed) return true;
+  return (current.personId ?? null) === (wanted.personId ?? null) && current.agreed === wanted.agreed;
+}
+
+// currentEs: der aktuelle Event-Dienst aus ChurchTools, falls schon geladen (Sync).
+async function pushPreacher(db, row, serviceId, currentEs = null) {
   if (!row.ct_event_id) {
     return { pushed: false, reason: 'Kein ChurchTools-Event verknüpft (bitte zuerst synchronisieren).' };
   }
 
-  let eventServiceId = row.ct_event_service_id;
-  if (!eventServiceId) {
+  let es = currentEs;
+  if (!es) {
     const event = await ct.getEvent(row.ct_event_id);
-    const es = ct.findPreacherService(event, serviceId);
-    if (!es) {
-      throw new Error(`Event ${row.ct_event_id} hat keinen Dienst "Predigt" in ChurchTools.`);
-    }
-    eventServiceId = es.id;
+    es = ct.findPreacherService(event, serviceId);
   }
+  if (!es) {
+    throw new Error(`Event ${row.ct_event_id} hat keinen Dienst "Predigt" in ChurchTools.`);
+  }
+  const eventServiceId = es.id;
 
-  await ct.setPreacher(row.ct_event_id, eventServiceId, {
-    name: row.preacher_name,
-    personId: row.preacher_person_id,
+  const wanted = {
+    name: row.preacher_name || null,
+    personId: row.preacher_person_id ?? null,
     agreed: row.status === 'confirmed' || row.status === 'completed',
-  });
+  };
+
+  if (!isUnchanged(ct.preacherFromService(es), wanted)) {
+    await ct.setPreacher(row.ct_event_id, eventServiceId, wanted);
+  }
 
   await db.query(`
     UPDATE sermon_plans

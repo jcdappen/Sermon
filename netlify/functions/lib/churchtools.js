@@ -141,12 +141,18 @@ function listServiceIds(event) {
 }
 
 // Normalisiert die Prediger-Daten eines Event-Dienstes.
+// Verborgene Zuweisungen (person.icon "user-shield", wenn der Token-Benutzer die
+// Person nicht sehen darf) liefern nur einen Platzhalter – dessen ID ist laut
+// ChurchTools-Schema keine echte Personen-ID und wird daher nicht übernommen.
 function preacherFromService(es) {
-  if (!es) return { name: null, personId: null, agreed: false };
+  if (!es) return { name: null, personId: null, agreed: false, concealed: false };
+  const concealed = es.person?.icon === 'user-shield';
   const name = (es.person?.title || es.name || '').trim() || null;
-  const rawPersonId = es.personId ?? es.person?.domainIdentifier ?? null;
+  const rawPersonId = concealed ? null : (es.personId ?? es.person?.domainIdentifier ?? null);
   const personId = rawPersonId !== null && !isNaN(Number(rawPersonId)) ? Number(rawPersonId) : null;
-  return { name, personId: name ? personId : null, agreed: Boolean(es.agreed) };
+  // "agreed" ist laut Schema veraltet; "isAccepted" hat Vorrang.
+  const agreed = Boolean(es.isAccepted ?? es.agreed);
+  return { name, personId: name ? personId : null, agreed, concealed: Boolean(name && concealed) };
 }
 
 async function setPreacherViaRest(eventId, eventServiceId, { name, personId, agreed }) {
