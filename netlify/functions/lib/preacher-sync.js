@@ -1,5 +1,5 @@
 // Überträgt den lokal gespeicherten Prediger einer sermon_plans-Zeile
-// in den Dienst "Prediger" des zugehörigen ChurchTools-Events.
+// in den Dienst "Predigt" des zugehörigen ChurchTools-Events.
 
 const ct = require('./churchtools');
 
@@ -13,7 +13,7 @@ async function pushPreacher(db, row, serviceId) {
     const event = await ct.getEvent(row.ct_event_id);
     const es = ct.findPreacherService(event, serviceId);
     if (!es) {
-      throw new Error(`Event ${row.ct_event_id} hat keinen Dienst "Prediger" in ChurchTools.`);
+      throw new Error(`Event ${row.ct_event_id} hat keinen Dienst "Predigt" in ChurchTools.`);
     }
     eventServiceId = es.id;
   }

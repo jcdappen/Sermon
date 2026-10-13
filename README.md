@@ -19,9 +19,9 @@ View your app in AI Studio: https://ai.studio/apps/drive/1tD2dBWz1LSWlvVWiO5mQry
 3. Run the app:
    `npm run dev`
 
-## ChurchTools-Sync (Gottesdienst ⇄ Dienst „Prediger“)
+## ChurchTools-Sync (Gottesdienst ⇄ Dienst „Predigt“)
 
-Der Predigtplaner lädt die Gottesdienste direkt über die ChurchTools-API (gleiches Muster wie im Gruppenmodul) und gleicht den Dienst **„Prediger“** in beide Richtungen ab.
+Der Predigtplaner lädt die Gottesdienste direkt über die ChurchTools-API (gleiches Muster wie im Gruppenmodul) und gleicht den Dienst **„Predigt“** (Dienst-ID 1, Dienstgruppe 6) in beide Richtungen ab.
 
 ### Umgebungsvariablen (Netlify → Site configuration → Environment variables)
 
@@ -31,13 +31,14 @@ Der Predigtplaner lädt die Gottesdienste direkt über die ChurchTools-API (glei
 | `CHURCHTOOLS_API_TOKEN` | ja | Login-Token eines ChurchTools-Benutzers (Header `Authorization: Login …`). Alternativ wird `CHURCHTOOLS_TOKEN` akzeptiert. |
 | `CHURCHTOOLS_BASE_URL` (oder `CT_BASE_URL`) | nein | Standard: `https://gemeindekonkordia.church.tools` (mit oder ohne `/api`) |
 | `CT_CALENDAR_ID` / `CT_CALENDAR_NAME` | nein | Kalender der Gottesdienste; Standard: Suche nach Name „Gottesdienst“ |
-| `CT_PREACHER_SERVICE_ID` / `CT_PREACHER_SERVICE_NAME` | nein | Dienst des Predigers; Standard: Suche nach Name „Prediger“ |
+| `CT_PREACHER_SERVICE_ID` | nein | ID des Dienstes „Predigt“; Standard: `1`. Mit `auto` wird per Name gesucht. |
+| `CT_PREACHER_SERVICE_NAME` / `CT_PREACHER_SERVICE_GROUP_ID` | nein | Nur bei `auto`: Dienstname (Standard „Predigt“) und Dienstgruppe (Standard `6`) |
 | `CT_SYNC_MONTHS` | nein | Wie viele Monate im Voraus synchronisiert werden (Standard: 12, plus 30 Tage rückwirkend) |
 | `CT_SERVICE_WRITE_MODE` | nein | `auto` (Standard: REST, bei 404/405 Legacy-AJAX `updateEventService`), `rest` oder `ajax` |
 
 `ICAL_URL` wird nicht mehr benötigt.
 
-Der Token-Benutzer braucht in ChurchTools Rechte zum Sehen des Gottesdienst-Kalenders/der Events, zum Bearbeiten der Dienste („Prediger“) und zur Personensuche.
+Der Token-Benutzer braucht in ChurchTools Rechte zum Sehen des Gottesdienst-Kalenders/der Events, zum Bearbeiten der Dienste („Predigt“) und zur Personensuche.
 
 ### Ablauf
 
@@ -47,8 +48,8 @@ Der Token-Benutzer braucht in ChurchTools Rechte zum Sehen des Gottesdienst-Kale
    - Bisherige iCal-Einträge mit gleicher Startzeit werden übernommen – Serie, Thema, Kollekte, Familytime, Abendmahl und Notizen bleiben erhalten.
    - Lokal geänderte, noch nicht übertragene Einträge (`pending`/`error`) werden nach ChurchTools geschrieben, sonst ist ChurchTools für den Prediger führend.
    - Status: in CT zugesagt → „Bestätigt“, eingetragen aber nicht zugesagt → „Angefragt“.
-3. **Prediger zuweisen** schreibt sofort in den Dienst „Prediger“ des Events. Auswahl aus der ChurchTools-Personensuche verknüpft die Person; freier Text wird als Name (Gast) eingetragen.
-4. Fehler (z. B. Event ohne Dienst „Prediger“) werden in der Planansicht als „Nicht in ChurchTools“ markiert und im Sync-Protokoll vermerkt.
+3. **Prediger zuweisen** schreibt sofort in den Dienst „Predigt“ des Events. Auswahl aus der ChurchTools-Personensuche verknüpft die Person; freier Text wird als Name (Gast) eingetragen.
+4. Fehler (z. B. Event ohne Dienst „Predigt“) werden in der Planansicht als „Nicht in ChurchTools“ markiert und im Sync-Protokoll vermerkt.
 
 ### Datenschutz (DSGVO)
 
